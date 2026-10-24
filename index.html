@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MNPR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one phone-width column. The yellow rear plate is the hero; the map is styled like a road atlas, with sign-coloured road shields. */
+  :root {
+    --bg: #EDEFF1;
+    --surface: #FFFFFF;
+    --fg: #14171B;
+    --muted: #5B636D;
+    --line: #D2D7DD;
+    --sea: #D5E1E8;
+    --ripple: #6E8FA3;
+    --land: #F4F2EA;
+    --land-edge: #7C8A94;
+    --land-other: #E7E8E2;
+    --grid: rgb(60 90 110 / 0.14);
+    --label: #2A3138;
+    --halo: #F4F2EA;
+    --blue: #1F3F9E;
+    --good: #1E7A46;
+    --bad: #B3261E;
+    --plate: #FFD31A;
+    --plate-front: #F7F7F2;
+    --plate-ink: #111111;
+    --plate-band: #1F3F9E;
+    --motorway: #0B5CAD;
+    --primary-road: #00703C;
+    --primary-text: #FFD31A;
+    --font-plate: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121519; --surface: #1A1F25; --fg: #E8EBEE; --muted: #98A1AB; --line: #2B323A;
+      --sea: #0F1A22; --ripple: #4F7690; --land: #252B31; --land-edge: #5F6E79; --land-other: #1C2126;
+      --grid: rgb(140 180 210 / 0.12); --label: #D9DEE2; --halo: #252B31;
+      --blue: #8EA6FF; --good: #5BC98A; --bad: #FF8A80; --motorway: #3D8BE0; --primary-road: #1F9A5A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121519; --surface: #1A1F25; --fg: #E8EBEE; --muted: #98A1AB; --line: #2B323A;
+    --sea: #0F1A22; --ripple: #4F7690; --land: #252B31; --land-edge: #5F6E79; --land-other: #1C2126;
+    --grid: rgb(140 180 210 / 0.12); --label: #D9DEE2; --halo: #252B31;
+    --blue: #8EA6FF; --good: #5BC98A; --bad: #FF8A80; --motorway: #3D8BE0; --primary-road: #1F9A5A;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.45 var(--font-body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 16px 40px;
+  }
+  .app { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .mark { font: 700 28px/1 var(--font-plate); letter-spacing: 0.04em; margin: 0; }
+  .mode { font: 500 12px/1 var(--font-data); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .tabs button { border: 0; background: none; padding: 9px 0; border-radius: 7px; font: 600 15px/1 var(--font-plate); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+
+  section { display: flex; flex-direction: column; gap: 16px; }
+
+  /* The rear plate */
+  .plate {
+    display: grid; grid-template-columns: auto 1fr; align-items: stretch;
+    background: var(--plate); color: var(--plate-ink);
+    border-radius: 10px; border: 2px solid #111; box-shadow: inset 0 0 0 4px var(--plate), inset 0 0 0 6px #111;
+    min-height: 168px; overflow: hidden;
+  }
+  .band { background: var(--plate-band); color: #fff; width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 0 18px; margin: 6px 0 6px 6px; border-radius: 5px 0 0 5px; font: 700 15px/1 var(--font-plate); letter-spacing: 0.04em; }
+  .plate-body { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px 16px 16px; }
+  .plate-label { font: 500 12px/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.7; }
+  .plate-num { font: 700 clamp(88px, 30vw, 128px)/0.95 var(--font-plate); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field label { font: 500 12px/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .check-row { display: flex; gap: 10px; align-items: center; }
+  .text { flex: 1; min-width: 0; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+  .text::placeholder { color: var(--muted); opacity: 0.7; }
+  .plate-text { font: 600 22px/1 var(--font-plate); letter-spacing: 0.12em; text-transform: uppercase; }
+  .num-text { font: 600 22px/1 var(--font-plate); font-variant-numeric: tabular-nums; width: 7.5em; flex: none; }
+  .verdict { font: 600 15px/1 var(--font-body); white-space: nowrap; }
+  .verdict.yes { color: var(--good); }
+  .verdict.no { color: var(--bad); }
+
+  .primary { border: 0; border-radius: 10px; background: var(--fg); color: var(--bg); padding: 16px; font: 700 24px/1 var(--font-plate); letter-spacing: 0.08em; text-transform: uppercase; }
+  .primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .secondary { border: 1.5px solid var(--fg); border-radius: 10px; background: none; padding: 12px; font: 700 18px/1 var(--font-plate); letter-spacing: 0.08em; text-transform: uppercase; }
+  .quiet { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; font-weight: 500; }
+  .quiet:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row .spacer { flex: 1; }
+  .confirm { font-size: 15px; color: var(--muted); }
+
+  h2 { font: 600 15px/1 var(--font-plate); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 8px 0 0; }
+  .log { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .log li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+  .log li:first-child { border-top: 0; }
+  .chip { justify-self: start; background: var(--plate); color: var(--plate-ink); border: 1.5px solid #111; border-radius: 4px; padding: 2px 8px; font: 700 18px/1.1 var(--font-plate); font-variant-numeric: tabular-nums; }
+  .chip.front { background: var(--plate-front); }
+  .what { display: flex; flex-direction: column; min-width: 0; }
+  .what b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .what span { font: 400 12px/1.3 var(--font-data); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .remove { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 6px; border-radius: 6px; }
+  .empty { color: var(--muted); padding: 18px 14px; margin: 0; display: block !important; }
+  .key { font-size: 13px; color: var(--muted); margin: -8px 0 0; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .key .chip { font-size: 13px; padding: 0 5px; margin-right: 4px; }
+
+  /* Maps */
+  .map-frame { position: relative; background: var(--sea); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .map { position: relative; width: min(100%, calc(66vh * 755 / 1120)); aspect-ratio: 755 / 1120; max-width: 100%; margin: 0 auto; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .map svg, .map canvas, .map .overlay { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .map canvas, .map .overlay { pointer-events: none; }
+  .map svg { cursor: grab; }
+  .map.picking svg { cursor: crosshair; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; vector-effect: non-scaling-stroke; fill: none; }
+  .ripple { fill: none; stroke: var(--ripple); stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .land-gb { fill: var(--land); stroke: var(--land-edge); stroke-width: 1.1; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .land-other { fill: var(--land-other); stroke: var(--land-edge); stroke-width: 0.8; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: 0.8; }
+  .road { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .road.casing { stroke: var(--land); stroke-width: 5; }
+  .road.m { stroke: var(--motorway); stroke-width: 2.6; }
+  .road.a { stroke: var(--primary-road); stroke-width: 2; }
+
+  .overlay > * { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+  .city { font: 500 11px/1 var(--font-data); color: var(--label); text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo); display: flex; align-items: center; gap: 4px; transform: translate(-4px, -50%); }
+  .city.l { flex-direction: row-reverse; transform: translate(calc(-100% + 4px), -50%); }
+  .city::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--label); box-shadow: 0 0 0 1.5px var(--halo); }
+  .shield { font: 700 11px/1 var(--font-plate); letter-spacing: 0.04em; padding: 2px 4px; border-radius: 3px; border: 1px solid #fff; }
+  .shield.m { background: var(--motorway); color: #fff; }
+  .shield.a { background: var(--primary-road); color: var(--primary-text); }
+  .friend { display: flex; flex-direction: column; align-items: center; gap: 2px; transform: translate(-50%, -100%); }
+  .friend .chip { font-size: 16px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.25); }
+  .friend .chip::after { content: ""; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #111; border-bottom: 0; }
+  .friend .chip { position: relative; }
+  .friend span { font: 600 11px/1 var(--font-body); color: var(--label); text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo); order: -1; }
+  .pin { width: 18px; height: 18px; border-radius: 50% 50% 50% 0; background: var(--bad); border: 2.5px solid #fff; transform: translate(-50%, -100%) rotate(-45deg); transform-origin: center; box-shadow: 0 2px 6px rgb(0 0 0 / 0.3); }
+  .hit { width: 12px; height: 12px; border-radius: 50%; background: var(--plate); border: 2px solid #111; }
+
+  .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+  .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font: 600 18px/1 var(--font-body); display: grid; place-items: center; padding: 0; }
+  .scale-note { position: absolute; left: 10px; bottom: 8px; font: 400 10px/1 var(--font-data); color: var(--muted); z-index: 2; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .stat b { display: block; font: 700 28px/1 var(--font-plate); font-variant-numeric: tabular-nums; }
+  .stat span { font: 500 11px/1.2 var(--font-data); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .seg button { border: 0; background: none; padding: 9px 14px; font-weight: 500; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .map-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+  .map-controls .field { flex: 1; min-width: 120px; }
+  .map-controls .text { padding: 8px 12px; }
+  .note { font-size: 13px; color: var(--muted); margin: 0; }
+
+  .board li { grid-template-columns: 32px minmax(0, 1fr) auto; }
+  .rank { font: 500 14px/1 var(--font-data); color: var(--muted); }
+
+  /* Logging sheet */
+  dialog { border: 0; padding: 0; background: var(--bg); color: var(--fg); width: min(460px, 100vw - 24px); max-height: calc(100vh - 24px); border-radius: 14px; }
+  dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+  .sheet { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+  .sheet h3 { margin: 0; font: 700 26px/1 var(--font-plate); letter-spacing: 0.04em; text-transform: uppercase; }
+  .sheet .map { width: min(100%, calc(46vh * 755 / 1120)); }
+  .sheet .save { background: var(--fg); color: var(--bg); border-color: var(--fg); padding-inline: 22px; }
+  .coords { font: 400 13px/1 var(--font-data); color: var(--muted); }
+
+  .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 15px; max-width: calc(100vw - 32px); z-index: 20; }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 class="mark">MNPR</h1>
+    <span class="mode" id="mode">On this device</span>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-play" aria-selected="true" aria-controls="play">Play</button>
+    <button role="tab" id="tab-map" aria-selected="false" aria-controls="mapview">Map</button>
+    <button role="tab" id="tab-top" aria-selected="false" aria-controls="top">Top</button>
+  </nav>
+
+  <section id="play" role="tabpanel" aria-labelledby="tab-play">
+    <div class="plate" aria-live="polite">
+      <div class="band">UK</div>
+      <div class="plate-body">
+        <span class="plate-label">Next</span>
+        <span class="plate-num" id="next">1</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="plate-input">Check a plate</label>
+      <div class="check-row">
+        <input class="text plate-text" id="plate-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB01 CDE">
+        <span class="verdict" id="verdict"></span>
+      </div>
+    </div>
+
+    <button class="primary" id="spot">Spotted 1</button>
+    <button class="secondary" id="spot-other">Log another number</button>
+
+    <div class="row">
+      <button class="quiet" id="undo">Undo last</button>
+      <span class="spacer"></span>
+      <button class="quiet" id="reset">Start again</button>
+    </div>
+    <div class="row confirm" id="reset-confirm" hidden>
+      <span>Back to 1? Your sightings stay on the map.</span>
+      <button class="quiet" id="reset-yes">Yes</button>
+      <button class="quiet" id="reset-no">No</button>
+    </div>
+
+    <h2>Your sightings</h2>
+    <p class="key"><span><span class="chip">7</span>Your run</span><span><span class="chip front">7</span>Logged for others</span></p>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <section id="mapview" role="tabpanel" aria-labelledby="tab-map" hidden>
+    <div class="stats">
+      <div class="stat"><b id="s-total">0</b><span>Sightings</span></div>
+      <div class="stat"><b id="s-players">0</b><span>Players</span></div>
+      <div class="stat"><b id="s-best">0</b><span>Highest</span></div>
+    </div>
+    <div class="map-controls">
+      <div class="field">
+        <label for="find">Find a number</label>
+        <input class="text num-text" id="find" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="All">
+      </div>
+      <div class="seg" role="group" aria-label="Show">
+        <button id="show-all" aria-pressed="true">Everyone</button>
+        <button id="show-mine" aria-pressed="false">Mine</button>
+      </div>
+    </div>
+    <div class="map-frame" id="heat-frame">
+      <div class="map" id="heat-map"></div>
+    </div>
+    <p class="note" id="map-note"></p>
+
+    <div id="found-wrap" hidden>
+      <h2 id="found-title">Where 23 has been seen</h2>
+      <ul class="log" id="found"></ul>
+    </div>
+
+    <h2>Friends</h2>
+    <ul class="log board" id="friends"></ul>
+  </section>
+
+  <section id="top" role="tabpanel" aria-labelledby="tab-top" hidden>
+    <h2>Highest number reached</h2>
+    <ul class="log board" id="board"></ul>
+  </section>
+</div>
+
+<dialog id="where">
+  <form class="sheet" method="dialog" id="where-form">
+    <h3 id="where-title">Where?</h3>
+    <div class="field" id="num-field">
+      <label for="other-num">Number</label>
+      <input class="text num-text" id="other-num" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="23">
+    </div>
+    <div class="map-frame" id="pick-frame">
+      <div class="map picking" id="pick-map"></div>
+    </div>
+    <div class="coords" id="coords">Tap the map. Zoom in for a precise spot.</div>
+    <div class="field">
+      <label for="place">Place (optional)</label>
+      <input class="text" id="place" maxlength="60" placeholder="A30 near Bodmin" autocomplete="off">
+    </div>
+    <div class="row">
+      <button type="button" class="quiet" id="locate" hidden>Use my location</button>
+      <span class="spacer"></span>
+      <button type="button" class="quiet" id="cancel">Cancel</button>
+      <button type="button" class="quiet" id="no-loc">No location</button>
+    </div>
+    <button type="submit" class="quiet save" id="save" disabled>Save</button>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+// Simplified Natural Earth outlines (public domain), projected for this map.
+const PATHS = {"IMN": "M383,681L371,694L366,692L361,693L366,678L371,673L377,662L382,659L385,661L387,673L383,681Z", "GBR": "M484,938L480,942L466,946L448,961L432,959L420,946L413,941L393,943L396,937L401,934L390,932L384,926L372,926L354,937L341,929L339,926L337,914L333,912L343,900L355,896L384,880L398,867L408,846L404,844L402,839L404,830L400,818L401,808L386,810L373,819L367,819L369,811L383,799L391,786L400,778L420,769L427,770L446,765L459,774L455,761L461,757L469,769L472,771L479,769L470,765L461,749L461,741L469,727L463,723L462,716L463,709L470,704L473,686L472,682L465,683L458,687L455,687L446,677L431,653L430,644L438,623L449,609L462,605L439,604L433,605L426,611L419,613L409,622L399,622L392,615L376,624L359,615L355,623L354,631L341,614L338,601L342,599L345,601L350,585L367,550L364,540L355,530L356,513L359,507L373,506L357,495L360,484L353,497L343,501L342,506L337,507L336,511L334,507L335,493L349,477L326,498L324,502L327,517L326,523L316,561L311,567L306,567L304,564L309,538L319,520L315,521L312,519L313,494L316,487L317,475L326,449L329,444L330,438L337,424L311,447L298,444L294,439L292,431L287,431L283,428L288,424L297,422L306,415L298,410L306,404L314,390L316,377L310,367L302,362L301,356L304,350L315,345L309,343L305,336L308,322L313,312L328,312L332,310L339,312L324,293L328,286L329,276L348,274L344,265L344,251L347,243L353,241L359,243L365,249L378,243L381,249L396,244L438,238L450,235L461,237L458,248L458,259L452,268L407,304L404,315L415,318L402,332L399,342L407,342L441,329L447,329L462,333L473,331L508,332L518,330L525,332L530,339L535,353L521,374L517,390L508,414L498,427L494,436L483,449L478,452L462,455L447,464L471,460L485,468L483,475L478,480L466,481L454,492L444,497L424,494L419,490L429,498L462,505L474,497L488,497L514,510L543,543L556,597L567,630L572,635L600,650L617,672L634,688L627,698L629,706L645,739L641,736L634,736L623,726L612,728L600,728L611,731L622,731L646,753L655,766L659,784L656,792L641,809L655,819L661,817L671,803L680,802L700,804L719,811L735,825L738,832L740,853L729,891L715,904L710,903L713,915L708,920L703,921L694,919L682,927L691,931L693,935L691,943L685,946L668,950L663,953L669,952L674,953L679,961L690,964L712,962L721,964L720,982L699,995L695,1007L684,1007L679,1011L651,1024L627,1019L613,1019L593,1023L557,1010L561,1018L551,1025L530,1028L521,1027L525,1037L521,1040L502,1036L497,1040L491,1038L478,1029L465,1028L441,1037L436,1045L431,1068L425,1076L418,1077L395,1061L389,1064L377,1066L364,1071L348,1084L342,1096L335,1098L330,1092L323,1090L312,1095L310,1092L310,1087L315,1080L329,1075L340,1063L348,1050L355,1047L356,1042L373,1022L376,1002L389,997L396,981L416,977L429,977L443,980L457,979L462,975L471,959L497,926L484,938ZM395,768L397,770L404,769L402,774L385,787L382,782L379,782L374,774L374,761L380,758L388,758L395,768ZM491,177L484,177L488,171L499,170L498,173L491,177ZM578,49L577,50L571,40L575,28L580,28L581,31L581,34L578,35L578,49ZM563,46L564,53L567,51L572,58L578,56L569,99L563,112L560,109L565,89L564,85L562,81L553,83L552,78L543,76L542,72L552,71L559,67L555,53L547,51L557,40L560,39L563,39L563,46ZM594,19L591,32L586,31L584,25L586,19L589,19L591,17L594,19ZM455,221L448,222L443,216L442,209L449,209L452,219L455,221ZM469,226L463,218L471,217L469,226ZM461,197L460,200L475,202L478,204L477,209L472,211L465,206L453,207L451,200L445,203L444,198L447,187L455,186L462,190L463,194L461,197ZM480,181L475,184L473,182L473,175L464,171L462,167L466,165L475,176L480,177L480,181ZM255,441L252,442L252,441L257,434L262,433L255,441ZM342,555L335,555L329,552L326,538L330,529L334,528L339,533L342,543L342,555ZM303,466L280,471L272,471L271,468L273,466L280,464L282,451L272,445L273,440L280,436L284,435L293,447L300,448L304,451L303,466ZM283,507L287,530L285,534L273,539L275,533L273,527L274,523L271,523L262,530L263,519L269,513L272,514L283,507ZM292,519L288,519L286,511L288,507L295,503L292,501L294,495L302,489L306,488L292,519ZM279,264L271,281L269,282L266,286L258,291L265,291L267,292L266,298L251,309L244,317L241,317L235,325L232,324L227,319L241,308L229,300L233,295L228,292L227,282L232,277L239,282L248,281L245,270L277,250L279,256L279,264ZM274,404L270,405L265,398L272,395L275,399L274,404ZM282,350L281,359L282,369L286,372L297,374L307,373L309,375L308,380L293,395L289,395L288,380L281,382L272,380L265,367L251,364L246,356L249,350L253,352L256,349L255,344L268,340L270,333L273,333L276,335L281,341L282,350ZM220,332L227,337L222,347L214,347L202,340L205,335L217,334L220,332ZM218,388L210,387L208,377L208,362L217,363L218,388ZM208,403L201,404L202,399L206,398L209,400L208,403ZM278,691L273,691L267,694L253,694L253,684L251,682L244,679L239,667L232,659L229,659L221,670L223,676L213,687L212,688L197,686L193,681L183,678L181,672L167,659L166,655L172,649L188,641L189,638L181,633L179,630L182,628L189,629L200,623L206,612L210,597L220,591L222,594L226,595L230,592L235,582L250,581L263,576L283,578L288,586L291,597L298,608L307,618L307,624L297,632L297,636L306,633L315,634L318,638L321,650L320,656L315,649L309,645L310,662L316,663L313,673L300,676L294,691L289,695L278,691ZM577,1031L572,1034L569,1040L566,1041L563,1041L551,1033L548,1033L551,1030L558,1027L563,1023L572,1027L577,1031Z", "IRL": "M61,709L61,712L54,704L43,702L48,698L58,700L61,701L61,709ZM220,591L210,597L206,612L200,623L189,629L182,628L179,630L181,633L189,638L188,641L172,649L166,655L167,659L181,672L183,678L193,681L197,686L212,688L213,687L223,676L221,670L229,659L232,659L239,667L244,679L251,682L253,684L253,694L267,694L273,691L278,691L280,695L281,698L272,699L270,701L270,706L282,742L283,761L282,763L288,791L289,807L281,826L278,846L270,860L263,865L271,875L265,880L258,881L245,879L239,884L234,875L232,883L228,886L220,886L202,890L196,901L182,906L177,913L171,917L166,919L157,911L150,911L154,915L154,926L146,929L140,935L132,936L127,942L99,950L89,947L73,953L68,952L75,940L86,932L82,931L64,935L51,940L54,934L73,918L81,913L53,923L46,922L44,919L38,920L36,913L45,903L61,892L63,888L61,886L35,887L37,879L46,873L50,872L62,876L71,875L67,871L67,862L64,860L79,845L113,838L129,832L121,829L117,824L106,837L93,838L84,835L72,842L63,843L73,835L89,818L93,810L89,805L99,790L102,788L116,784L120,779L108,775L86,776L82,773L80,767L68,768L65,766L70,761L53,759L55,752L52,749L51,745L74,740L63,734L64,727L73,722L83,719L83,712L73,711L63,714L66,700L66,690L62,692L59,681L53,684L53,678L55,674L58,672L68,673L74,670L83,669L98,670L108,679L116,671L140,677L143,676L141,670L138,665L147,656L161,649L166,636L148,639L130,632L133,627L143,622L144,619L152,611L150,603L151,598L155,594L158,585L174,580L186,580L189,581L188,575L194,574L199,583L200,588L195,595L198,597L194,603L204,595L201,581L202,575L206,572L215,570L211,564L214,563L235,576L222,586L220,591Z"};
+
+// Map projection: equirectangular, squashed for latitude 54.5°N. 100 units per degree of latitude.
+const K = Math.cos(54.5 * Math.PI / 180), LON0 = -11, LAT1 = 61, S = 100, W = 755, H = 1120;
+const toXY = (lat, lng) => [(lng - LON0) * K * S, (LAT1 - lat) * S];
+const toLatLng = (x, y) => [LAT1 - y / S, x / (K * S) + LON0];
+const exact = v => Math.round(v * 10000) / 10000;  // about 10 m
+const rough = v => Math.round(v * 100) / 100;      // about 1 km
+
+// Stylised atlas layers. Road lines are drawn through key towns, not surveyed.
+const CITIES = [
+  ["London", 51.51, -0.13, 1], ["Birmingham", 52.48, -1.90, 1], ["Manchester", 53.48, -2.24, 1],
+  ["Leeds", 53.80, -1.55, 1], ["Newcastle", 54.97, -1.61, 1], ["Bristol", 51.45, -2.59, 2],
+  ["Cardiff", 51.48, -3.18, 1, "l"], ["Glasgow", 55.86, -4.25, 1, "l"], ["Edinburgh", 55.95, -3.19, 1],
+  ["Belfast", 54.60, -5.93, 1], ["Aberdeen", 57.15, -2.09, 1], ["Inverness", 57.48, -4.22, 1],
+  ["Plymouth", 50.38, -4.14, 1], ["Norwich", 52.63, 1.30, 1, "l"],
+  ["Liverpool", 53.41, -2.98, 2, "l"], ["Sheffield", 53.38, -1.47, 2], ["Nottingham", 52.95, -1.15, 2],
+  ["Southampton", 50.90, -1.40, 2], ["Exeter", 50.72, -3.53, 2], ["Truro", 50.26, -5.05, 2],
+  ["Hull", 53.74, -0.33, 2, "l"], ["Carlisle", 54.89, -2.93, 2], ["Dundee", 56.46, -2.97, 2],
+  ["Cambridge", 52.21, 0.12, 2], ["Swansea", 51.62, -3.94, 2], ["Oxford", 51.75, -1.26, 2],
+  ["Penzance", 50.12, -5.54, 2, "l"], ["Perth", 56.40, -3.44, 2], ["Leicester", 52.64, -1.13, 2]
+];
+const ring = (lat, lng, rl, rg, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = i / n * Math.PI * 2; return [lat + Math.sin(a) * rl, lng + Math.cos(a) * rg];
+});
+const ROADS = [
+  ["M1", "m", [[51.57,-0.24],[51.88,-0.42],[52.05,-0.72],[52.25,-1.0],[52.62,-1.2],[52.93,-1.27],[53.38,-1.38],[53.75,-1.45]]],
+  ["M6", "m", [[52.40,-1.25],[52.45,-1.45],[52.53,-1.88],[52.75,-2.05],[53.0,-2.25],[53.4,-2.55],[53.8,-2.7],[54.05,-2.78],[54.4,-2.62],[54.65,-2.75],[54.9,-2.95]]],
+  ["M74", "m", [[54.9,-2.95],[55.05,-3.15],[55.3,-3.45],[55.6,-3.8],[55.83,-4.1]]],
+  ["M8", "m", [[55.86,-4.25],[55.9,-3.8],[55.93,-3.3]]],
+  ["M5", "m", [[52.5,-2.0],[52.2,-2.15],[51.85,-2.2],[51.55,-2.6],[51.3,-2.95],[51.0,-3.08],[50.73,-3.47]]],
+  ["M4", "m", [[51.49,-0.3],[51.43,-0.98],[51.5,-1.4],[51.53,-1.75],[51.53,-2.55],[51.58,-3.0],[51.53,-3.2],[51.6,-3.65],[51.65,-3.9]]],
+  ["M62", "m", [[53.4,-2.9],[53.45,-2.6],[53.48,-2.3],[53.65,-1.95],[53.73,-1.6],[53.72,-1.0],[53.75,-0.4]]],
+  ["M40", "m", [[51.55,-0.45],[51.65,-0.8],[51.75,-1.17],[52.0,-1.3],[52.25,-1.55],[52.42,-1.78]]],
+  ["M3", "m", [[51.4,-0.45],[51.3,-0.85],[51.1,-1.3],[50.92,-1.4]]],
+  ["M11", "m", [[51.6,0.05],[51.9,0.2],[52.2,0.12]]],
+  ["M25", "m", ring(51.5, -0.12, 0.23, 0.37)],
+  ["M90", "m", [[56.0,-3.4],[56.2,-3.42],[56.4,-3.45]]],
+  ["M80", "m", [[55.88,-4.15],[56.0,-3.95],[56.12,-3.93]]],
+  ["M1", "m", [[54.6,-5.93],[54.45,-6.35],[54.4,-6.7]]],
+  ["A1", "a", [[51.65,-0.2],[52.0,-0.25],[52.57,-0.27],[53.0,-0.75],[53.4,-1.05],[53.75,-1.4],[54.1,-1.45],[54.5,-1.6],[54.97,-1.62],[55.4,-1.7],[55.77,-2.0],[55.95,-2.6],[55.95,-3.1]]],
+  ["A9", "a", [[56.12,-3.93],[56.4,-3.45],[56.7,-3.73],[57.2,-3.83],[57.48,-4.22]]],
+  ["A90", "a", [[56.4,-3.45],[56.46,-2.97],[56.75,-2.45],[57.15,-2.1]]],
+  ["A30", "a", [[50.73,-3.47],[50.7,-3.9],[50.64,-4.2],[50.47,-4.72],[50.3,-5.05],[50.23,-5.23],[50.12,-5.53]]],
+  ["A11", "a", [[52.2,0.2],[52.4,0.6],[52.63,1.29]]],
+  ["A55", "a", [[53.2,-2.9],[53.25,-3.5],[53.28,-3.85],[53.23,-4.15],[53.3,-4.6]]],
+  ["A38", "a", [[50.73,-3.47],[50.5,-3.75],[50.4,-4.14]]]
+];
+
+const KEY = "mnpr.v1";
+const $ = id => document.getElementById(id);
+
+let me = { n: 1, sightings: [], spots: [] };
+let players = {};          // everyone's data, keyed by id (shared mode only)
+let mode = "local";
+let db = null, user = null, uid = null, synced = false;
+let writing = Promise.resolve();
+let showMine = false;
+let pin = null;
+let sheetMode = "run";
+
+// The rule: the plate's digits must be exactly the number, leading zeros allowed.
+function plateCounts(plate, n) {
+  const digits = plate.replace(/\D/g, "");
+  return digits !== "" && digits.replace(/^0+/, "") === String(n);
+}
+
+const best = p => p.sightings.reduce((m, s) => Math.max(m, s.n), 0);
+const allSeen = p => [...p.sightings, ...(p.spots || [])];
+const lastSeen = p => allSeen(p).filter(s => s.lat != null).sort((a, b) => b.at - a.at)[0];
+
+function loadLocal() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    if (saved && Number.isInteger(saved.n) && Array.isArray(saved.sightings)) {
+      me = { n: saved.n, sightings: saved.sightings, spots: Array.isArray(saved.spots) ? saved.spots : [] };
+    }
+  } catch (e) {}
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(me)); } catch (e) {}
+  if (mode === "shared") {
+    const body = { n: me.n, best: best(me), sightings: me.sightings, spots: me.spots, updated: Date.now() };
+    writing = writing
+      .then(() => db.doc("players/" + uid).set(body))
+      .catch(e => toast(e && e.code === "quota_exceeded" ? "The shared map is full." : "Couldn't save to the shared map."));
+  }
+  render();
+}
+
+async function connect() {
+  if (!window.claude || !window.claude.use) return;
+  const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!d || !u) return;
+  const id = await u.id();
+  if (!id) return;
+  db = d; user = u; uid = id; mode = "shared";
+  db.collection("players").onSnapshot(snap => {
+    players = {};
+    snap.docs.forEach(doc => {
+      const p = doc.exists && doc.data();
+      if (p && Array.isArray(p.sightings)) players[doc.id] = { ...p, spots: Array.isArray(p.spots) ? p.spots : [] };
+    });
+    if (!synced) {
+      synced = true;
+      const mine = players[uid];
+      if (mine) me = { n: mine.n, sightings: mine.sightings.slice(), spots: mine.spots.slice() };
+      else if (me.sightings.length || me.spots.length) save(); // bring this device's run onto the shared map
+    }
+    render();
+  }, () => toast("Lost the shared map. Reload to reconnect."));
+}
+
+function allPlayers() {
+  if (mode !== "shared") return { you: me };
+  return { ...players, [uid]: me };
+}
+const isMe = id => id === uid || id === "you";
+
+async function namesFor(ids) {
+  const ps = user ? await user.profiles(ids) : {};
+  const out = {};
+  ids.forEach(id => { out[id] = isMe(id) ? "You" : ((ps[id] && ps[id].name) || "Someone"); });
+  return out;
+}
+
+// ---- Atlas map: zoom, pan, tap ----
+
+function atlas(host, { onTap, onView } = {}) {
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(ns, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e); return e;
+  };
+  const svg = el("svg", { role: "img", "aria-label": "Map of the UK" }, host);
+  const linePath = pts => "M" + pts.map(([la, lo]) => toXY(la, lo).map(v => v.toFixed(1)).join(",")).join("L");
+
+  const grid = el("g", {}, svg);
+  for (let lon = -10; lon <= 2; lon += 2) { const x = toXY(55, lon)[0]; el("line", { x1: x, x2: x, y1: 0, y2: H, class: "grid-line" }, grid); }
+  for (let lat = 50; lat <= 60; lat += 2) { const y = toXY(lat, 0)[1]; el("line", { x1: 0, x2: W, y1: y, y2: y, class: "grid-line" }, grid); }
+
+  // Coastal ripples: the coastline stroked wide and faint, a few times over.
+  const coast = Object.values(PATHS).join("");
+  [[20, 0.08], [13, 0.11], [7, 0.15], [3, 0.22]].forEach(([w, o]) => el("path", { d: coast, class: "ripple", "stroke-width": w, "stroke-opacity": o }, svg));
+  for (const [code, d] of Object.entries(PATHS)) el("path", { d, class: code === "GBR" ? "land-gb" : "land-other" }, svg);
+
+  const roads = el("g", {}, svg);
+  ROADS.forEach(([, kind, pts]) => el("path", { d: linePath(pts), class: "road casing" }, roads));
+  ROADS.forEach(([, kind, pts]) => el("path", { d: linePath(pts), class: "road " + kind }, roads));
+
+  const canvas = document.createElement("canvas"); host.appendChild(canvas);
+  const overlay = document.createElement("div"); overlay.className = "overlay"; host.appendChild(overlay);
+
+  const zoomBox = document.createElement("div"); zoomBox.className = "zoom";
+  zoomBox.innerHTML = '<button type="button" aria-label="Zoom in">+</button><button type="button" aria-label="Zoom out">−</button><button type="button" aria-label="Show whole map">⤢</button>';
+  host.parentElement.appendChild(zoomBox);
+
+  // Fixed labels: cities and road shields, placed in screen space so they stay readable when zoomed.
+  const fixed = [];
+  CITIES.forEach(([name, la, lo, tier, side]) => {
+    const d = document.createElement("div"); d.className = side ? "city l" : "city"; d.textContent = name;
+    fixed.push({ el: d, xy: toXY(la, lo), minZoom: tier === 1 ? 1 : 2.2 });
+  });
+  const seenRef = new Set();
+  ROADS.forEach(([ref, kind, pts]) => {
+    if (ref === "M25" || seenRef.has(ref + pts[0])) return; seenRef.add(ref + pts[0]);
+    const d = document.createElement("div"); d.className = "shield " + kind; d.textContent = ref;
+    const mid = pts[Math.floor(pts.length / 2)];
+    fixed.push({ el: d, xy: toXY(mid[0], mid[1]), minZoom: kind === "m" ? 1.6 : 2 });
+  });
+  let marks = [];
+
+  let v = { x: 0, y: 0, w: W, h: H }, ready = false;
+  const zoom = () => W / v.w;
+
+  function clamp() {
+    v.w = Math.min(W, Math.max(W / 16, v.w)); v.h = v.w * H / W;
+    v.x = Math.min(W - v.w, Math.max(0, v.x)); v.y = Math.min(H - v.h, Math.max(0, v.y));
+  }
+  function place(item) {
+    const px = (item.xy[0] - v.x) / v.w, py = (item.xy[1] - v.y) / v.h;
+    const show = px > -0.05 && px < 1.05 && py > -0.05 && py < 1.05 && zoom() >= (item.minZoom || 0);
+    item.el.hidden = !show;
+    if (show) { item.el.style.left = px * 100 + "%"; item.el.style.top = py * 100 + "%"; }
+  }
+  function apply() {
+    clamp();
+    svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+    fixed.forEach(place); marks.forEach(place);
+    ready && onView && onView();
+  }
+  function zoomAt(f, mx, my) {
+    const nw = Math.min(W, Math.max(W / 16, v.w / f)), k = nw / v.w;
+    v.x = mx - (mx - v.x) * k; v.y = my - (my - v.y) * k; v.w = nw; apply();
+  }
+  const toMap = (cx, cy) => {
+    const r = svg.getBoundingClientRect();
+    return [v.x + (cx - r.left) / r.width * v.w, v.y + (cy - r.top) / r.height * v.h];
+  };
+
+  const [zin, zout, zall] = zoomBox.children;
+  zin.onclick = () => zoomAt(1.8, v.x + v.w / 2, v.y + v.h / 2);
+  zout.onclick = () => zoomAt(1 / 1.8, v.x + v.w / 2, v.y + v.h / 2);
+  zall.onclick = () => { v = { x: 0, y: 0, w: W, h: H }; apply(); };
+  svg.addEventListener("wheel", e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, ...toMap(e.clientX, e.clientY)); }, { passive: false });
+
+  // One finger drags, two fingers pinch, a still tap drops a pin.
+  const pts = new Map(); let moved = false, start = null, pinch = null;
+  svg.addEventListener("pointerdown", e => {
+    svg.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { moved = false; start = { cx: e.clientX, cy: e.clientY, x: v.x, y: v.y }; }
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: v.w, mid: toMap((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) };
+      moved = true;
+    }
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const r = svg.getBoundingClientRect();
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      const nw = Math.min(W, Math.max(W / 16, pinch.w * pinch.d / d)), k = nw / v.w;
+      v.x = pinch.mid[0] - (pinch.mid[0] - v.x) * k; v.y = pinch.mid[1] - (pinch.mid[1] - v.y) * k; v.w = nw; apply();
+    } else if (pts.size === 1 && start) {
+      const dx = e.clientX - start.cx, dy = e.clientY - start.cy;
+      if (Math.hypot(dx, dy) > 6) moved = true;
+      if (moved) { v.x = start.x - dx / r.width * v.w; v.y = start.y - dy / r.height * v.h; apply(); }
+    }
+  });
+  const up = e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pts.size === 1) { const [p] = [...pts.values()]; start = { cx: p[0], cy: p[1], x: v.x, y: v.y }; }
+    if (pts.size === 0) {
+      if (!moved && e.type === "pointerup" && onTap) onTap(...toMap(e.clientX, e.clientY));
+      start = null;
+    }
+  };
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
+
+  overlay.append(...fixed.map(f => f.el));
+  apply();
+  ready = true;
+
+  return {
+    canvas,
+    view: () => v,
+    focus(xy, z) { v.w = W / z; v.h = v.w * H / W; v.x = xy[0] - v.w / 2; v.y = xy[1] - v.h / 2; apply(); },
+    setMarks(list) {
+      marks.forEach(m => m.el.remove());
+      marks = list; overlay.append(...marks.map(m => m.el)); marks.forEach(place);
+    },
+    refresh: apply
+  };
+}
+
+// ---- Rendering ----
+
+const fmtWhen = t => new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const fmtWhere = s => s.place || (s.lat == null ? "No location" : `${s.lat.toFixed(3)}, ${s.lng.toFixed(3)}`);
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 60) return m <= 1 ? "just now" : m + " min ago";
+  const h = Math.round(m / 60);
+  return h < 24 ? h + " h ago" : Math.round(h / 24) + " d ago";
+}
+
+function row(chip, front, main, sub, extra) {
+  const li = document.createElement("li");
+  li.innerHTML = '<span class="chip"></span><span class="what"><b></b><span></span></span>';
+  const c = li.children[0]; c.textContent = chip; if (front) c.classList.add("front");
+  li.querySelector("b").textContent = main;
+  li.querySelector(".what span").textContent = sub;
+  li.appendChild(extra || document.createElement("span"));
+  return li;
+}
+function emptyRow(list, text) {
+  const li = document.createElement("li"); li.className = "empty"; li.textContent = text; list.appendChild(li);
+}
+
+function render() {
+  $("mode").textContent = mode === "shared" ? "Shared map" : "On this device";
+  $("next").textContent = me.n;
+  $("spot").textContent = "Spotted " + me.n;
+  updateVerdict();
+  $("undo").disabled = me.sightings.length === 0;
+
+  const log = $("log");
+  log.replaceChildren();
+  const mine = [...me.sightings.map(s => ({ ...s, run: true })), ...me.spots.map(s => ({ ...s, run: false }))]
+    .sort((a, b) => b.at - a.at).slice(0, 60);
+  if (!mine.length) emptyRow(log, "Nothing yet. Find a plate with just a 1 on it.");
+  mine.forEach(s => {
+    let extra;
+    if (!s.run) {
+      extra = document.createElement("button");
+      extra.className = "remove"; extra.textContent = "×"; extra.setAttribute("aria-label", "Remove " + s.n);
+      extra.onclick = () => { me = { ...me, spots: me.spots.filter(x => x.at !== s.at) }; save(); };
+    }
+    log.appendChild(row(s.n, !s.run, fmtWhere(s), fmtWhen(s.at), extra));
+  });
+
+  const ps = Object.values(allPlayers());
+  $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
+  $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
+  $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
+  $("map-note").textContent = (mode === "shared" ? "Friends appear where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") +
+    "Plates are never saved.";
+  renderMapView();
+  renderBoard();
+}
+
+async function renderMapView() {
+  const all = allPlayers();
+  const ids = Object.keys(all).filter(id => allSeen(all[id]).length);
+  const names = await namesFor(ids);
+
+  // Friends: a plate showing the number they're on, at their last rough location.
+  const friendMarks = [];
+  const list = $("friends");
+  list.replaceChildren();
+  ids.sort((a, b) => (lastSeen(all[b]) || { at: 0 }).at - (lastSeen(all[a]) || { at: 0 }).at).forEach(id => {
+    const p = all[id], last = lastSeen(p);
+    list.appendChild(row(p.n, false, names[id], last ? `${fmtWhere(last)} · ${ago(last.at)}` : "No location yet"));
+    if (!last) return;
+    const d = document.createElement("div"); d.className = "friend";
+    d.innerHTML = '<span></span><b class="chip"></b>';
+    d.children[0].textContent = names[id]; d.children[1].textContent = p.n;
+    friendMarks.push({ el: d, xy: toXY(rough(last.lat), rough(last.lng)) });
+  });
+  if (!ids.length) emptyRow(list, "No one on the map yet.");
+
+  // Find a number: exact pins for every sighting of it.
+  const n = parseInt($("find").value, 10);
+  const found = $("found");
+  found.replaceChildren();
+  $("found-wrap").hidden = !n;
+  const hitMarks = [];
+  if (n) {
+    $("found-title").textContent = "Where " + n + " has been seen";
+    const hits = ids.filter(id => !showMine || isMe(id))
+      .flatMap(id => allSeen(all[id]).filter(s => s.n === n).map(s => ({ ...s, who: names[id] })))
+      .sort((a, b) => b.at - a.at);
+    hits.forEach(s => {
+      found.appendChild(row(n, true, fmtWhere(s), `${s.who} · ${ago(s.at)}`));
+      if (s.lat != null) { const d = document.createElement("div"); d.className = "hit"; hitMarks.push({ el: d, xy: toXY(s.lat, s.lng) }); }
+    });
+    if (!hits.length) emptyRow(found, "No one has logged " + n + " yet.");
+  }
+  heatMap.setMarks([...hitMarks, ...friendMarks]);
+  drawHeat();
+}
+
+async function renderBoard() {
+  const all = allPlayers();
+  const rows = Object.entries(all).filter(([, p]) => p.sightings.length)
+    .map(([id, p]) => ({ id, best: best(p) }))
+    .sort((a, b) => b.best - a.best);
+  const names = await namesFor(rows.map(r => r.id));
+  const board = $("board");
+  board.replaceChildren();
+  if (!rows.length) return emptyRow(board, "No one has spotted a 1 yet.");
+  rows.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="rank"></span><span class="what"><b></b></span><span class="chip"></span>';
+    li.children[0].textContent = i + 1;
+    li.querySelector("b").textContent = names[r.id];
+    li.children[2].textContent = r.best;
+    board.appendChild(li);
+  });
+}
+
+function updateVerdict() {
+  const v = $("verdict"), plate = $("plate-input").value.trim();
+  if (!plate) { v.textContent = ""; v.className = "verdict"; return; }
+  const ok = plateCounts(plate, me.n);
+  v.textContent = ok ? "Counts" : "Doesn't count";
+  v.className = "verdict " + (ok ? "yes" : "no");
+}
+
+// Heat map: stack soft dots as alpha, then colour by density (yellow, orange, red).
+const ramp = (() => {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 1;
+  const g = c.getContext("2d"), grad = g.createLinearGradient(0, 0, 256, 0);
+  grad.addColorStop(0.15, "#FFD31A"); grad.addColorStop(0.55, "#F08A00"); grad.addColorStop(1, "#C8102E");
+  g.fillStyle = grad; g.fillRect(0, 0, 256, 1);
+  return g.getImageData(0, 0, 256, 1).data;
+})();
+
+function drawHeat() {
+  const canvas = heatMap.canvas, box = canvas.getBoundingClientRect();
+  if (!box.width) return;
+  const dpr = window.devicePixelRatio || 1, v = heatMap.view();
+  canvas.width = Math.round(box.width * dpr); canvas.height = Math.round(box.height * dpr);
+  const ctx = canvas.getContext("2d"), scale = canvas.width / v.w;
+  const all = allPlayers();
+  const pts = Object.keys(all).filter(id => !showMine || isMe(id)).flatMap(id => allSeen(all[id])).filter(s => s.lat != null);
+  const rad = Math.min(60 * dpr, Math.max(10 * dpr, 18 * scale));
+  for (const s of pts) {
+    const [mx, my] = toXY(s.lat, s.lng), x = (mx - v.x) * scale, y = (my - v.y) * scale;
+    if (x < -rad || y < -rad || x > canvas.width + rad || y > canvas.height + rad) continue;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, "rgba(0,0,0,0.45)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  if (!pts.length) return;
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (!a) continue;
+    const j = a * 4;
+    d[i] = ramp[j]; d[i + 1] = ramp[j + 1]; d[i + 2] = ramp[j + 2]; d[i + 3] = Math.min(230, 50 + a * 1.3);
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
+}
+
+// ---- Maps ----
+
+const heatMap = atlas($("heat-map"), { onView: () => drawHeat() });
+const pinEl = document.createElement("div"); pinEl.className = "pin";
+const pickMap = atlas($("pick-map"), { onTap: (x, y) => setPin(...toLatLng(x, y)) });
+
+// ---- Logging ----
+
+function setPin(lat, lng) {
+  pin = { lat: exact(lat), lng: exact(lng) };
+  pickMap.setMarks([{ el: pinEl, xy: toXY(pin.lat, pin.lng) }]);
+  $("coords").textContent = `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`;
+  updateSave();
+}
+
+function otherNum() {
+  const n = parseInt($("other-num").value, 10);
+  return n > 0 ? n : null;
+}
+function updateSave() {
+  const numOk = sheetMode === "run" || otherNum();
+  $("save").disabled = !(pin && numOk);
+  $("no-loc").disabled = !numOk;
+}
+
+function openSheet(kind) {
+  sheetMode = kind;
+  $("num-field").hidden = kind === "run";
+  $("where-title").textContent = kind === "run" ? "Where was " + me.n + "?" : "Log a number";
+  $("other-num").value = ""; $("place").value = "";
+  updateSave();
+  $("where").showModal();
+  pickMap.refresh();
+  if (kind === "other") $("other-num").focus();
+}
+
+if (navigator.geolocation) $("locate").hidden = false;
+$("locate").addEventListener("click", () => {
+  navigator.geolocation.getCurrentPosition(
+    p => { setPin(p.coords.latitude, p.coords.longitude); pickMap.focus(toXY(pin.lat, pin.lng), 8); },
+    () => toast("Location is off. Tap the map instead."),
+    { timeout: 8000, maximumAge: 60000 }
+  );
+});
+
+$("spot").addEventListener("click", () => openSheet("run"));
+$("spot-other").addEventListener("click", () => openSheet("other"));
+$("other-num").addEventListener("input", updateSave);
+$("cancel").addEventListener("click", () => $("where").close());
+
+function logSighting(where) {
+  const place = $("place").value.trim();
+  const s = { at: Date.now(), ...where, ...(place ? { place } : {}) };
+  if (sheetMode === "run") {
+    me = { ...me, n: me.n + 1, sightings: [...me.sightings, { n: me.n, ...s }] };
+    $("plate-input").value = "";
+    save();
+    toast("Logged. Now find " + me.n + ".");
+  } else {
+    const n = otherNum();
+    me = { ...me, spots: [...me.spots, { n, ...s }] };
+    save();
+    toast(n + " is on the map.");
+  }
+  $("where").close();
+}
+
+$("where-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!$("save").disabled) logSighting({ lat: pin.lat, lng: pin.lng });
+});
+$("no-loc").addEventListener("click", () => logSighting({}));
+
+$("undo").addEventListener("click", () => {
+  const last = me.sightings[me.sightings.length - 1];
+  if (!last) return;
+  me = { ...me, n: last.n, sightings: me.sightings.slice(0, -1) };
+  save();
+});
+
+$("reset").addEventListener("click", () => { $("reset-confirm").hidden = false; });
+$("reset-no").addEventListener("click", () => { $("reset-confirm").hidden = true; });
+$("reset-yes").addEventListener("click", () => {
+  me = { ...me, n: 1 };
+  $("reset-confirm").hidden = true;
+  save();
+});
+
+$("plate-input").addEventListener("input", updateVerdict);
+$("find").addEventListener("input", renderMapView);
+
+// ---- Tabs and map filter ----
+
+const tabs = { play: "tab-play", mapview: "tab-map", top: "tab-top" };
+for (const [panel, tab] of Object.entries(tabs)) {
+  $(tab).addEventListener("click", () => {
+    for (const [p, t] of Object.entries(tabs)) {
+      $(p).hidden = p !== panel;
+      $(t).setAttribute("aria-selected", String(p === panel));
+    }
+    if (panel === "mapview") heatMap.refresh();
+  });
+}
+for (const [id, mine] of [["show-all", false], ["show-mine", true]]) {
+  $(id).addEventListener("click", () => {
+    showMine = mine;
+    $("show-all").setAttribute("aria-pressed", String(!mine));
+    $("show-mine").setAttribute("aria-pressed", String(mine));
+    renderMapView();
+  });
+}
+window.addEventListener("resize", drawHeat);
+
+loadLocal();
+render();
+connect();
+</script>
+
+</body>
+</html>
