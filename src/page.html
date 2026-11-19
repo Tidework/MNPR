@@ -30,7 +30,7 @@
   body {
     background: linear-gradient(var(--deck), var(--abyss) 60%) fixed;
     color: var(--text);
-    font: 22px/1.15 var(--font);
+    font: 22px/1.3 var(--font);
     letter-spacing: 0.02em;
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
@@ -42,6 +42,9 @@
   button, input { font: inherit; color: inherit; letter-spacing: inherit; }
   button { cursor: pointer; }
   :focus-visible { outline: 2px dashed var(--cyan); outline-offset: 3px; }
+  ::selection { background: var(--pink); color: var(--abyss); }
+  input { caret-color: var(--cyan); }
+  html { scrollbar-color: var(--edge) var(--abyss); }
   img.sprite { image-rendering: pixelated; display: block; }
 
   /* ---- Scene ---- */
@@ -67,6 +70,9 @@
     font-size: clamp(26px, 8vw, 34px); letter-spacing: 0.14em; text-transform: uppercase; color: #fff; white-space: nowrap;
     animation: glow 1.6s steps(2) infinite;
   }
+  .big { display: flex; align-items: center; justify-content: center; gap: 0.5em; }
+  .big .arrow { width: 18px; height: 21px; }
+  .big .arrow.flip { transform: scaleX(-1); }
   .big:active { transform: translateY(3px); }
   @keyframes glow { 50% { box-shadow: inset 0 0 0 3px var(--abyss), 0 0 26px rgb(77 227 255 / 0.6); } }
   .ghost { width: 100%; padding: 12px; border: 2px solid var(--edge); background: rgb(13 24 48 / 0.6); font-size: 22px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--soft); }
@@ -76,10 +82,10 @@
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row .spacer { flex: 1; }
   .text { width: 100%; min-width: 0; padding: 10px 12px; border: 2px solid var(--edge); background: var(--abyss); color: var(--text); font-size: 24px; }
-  .text::placeholder { color: var(--muted); opacity: 0.6; }
+  .text::placeholder { color: var(--muted); opacity: 0.9; }
   .text:focus { border-color: var(--cyan); outline: none; }
   .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .note { font-size: 17px; color: var(--muted); margin: 0; line-height: 1.2; }
+  .note { font-size: 18px; color: var(--muted); margin: 0; line-height: 1.35; }
 
   /* ---- Level bar ---- */
   .level { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
@@ -119,7 +125,8 @@
   .what { display: flex; flex-direction: column; min-width: 0; }
   .what b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .what span { font-size: 17px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .remove { border: 0; background: none; color: var(--muted); font-size: 26px; padding: 0 6px; }
+  .remove { border: 0; background: none; padding: 6px; opacity: 0.6; }
+  .remove:hover { opacity: 1; }
   .key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 17px; color: var(--muted); margin: -4px 0 0; }
   .key .chip { font-size: 16px; padding: 0 4px; margin-right: 6px; }
   .who-row { display: grid !important; grid-template-columns: 30px 56px minmax(0, 1fr) auto !important; }
@@ -136,6 +143,8 @@
   .city { font-size: 16px; color: var(--soft); text-shadow: 1px 1px 0 var(--abyss), -1px -1px 0 var(--abyss), 1px -1px 0 var(--abyss), -1px 1px 0 var(--abyss); display: flex; align-items: center; gap: 4px; transform: translate(-3px, -50%); }
   .city::before { content: ""; width: 5px; height: 5px; background: var(--text); box-shadow: 0 0 0 1px var(--abyss); }
   .city.l { flex-direction: row-reverse; transform: translate(calc(-100% + 3px), -50%); }
+  .city.major { font-size: 19px; color: var(--text); }
+  .city.major::before { width: 7px; height: 7px; background: var(--plate); }
   .shield { font-size: 14px; padding: 0 3px; line-height: 1.1; border: 1px solid var(--abyss); }
   .shield.m { background: var(--pink); color: var(--abyss); }
   .shield.a { background: var(--soft); color: var(--abyss); }
@@ -147,7 +156,8 @@
   @keyframes blink { 50% { background: #fff; } }
   .pin { transform: translate(-50%, -100%); }
   .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
-  .zoom button { width: 36px; height: 36px; border: 2px solid var(--edge); background: rgb(5 10 20 / 0.85); font-size: 26px; line-height: 1; padding: 0; color: var(--text); }
+  .zoom button { width: 36px; height: 36px; border: 2px solid var(--edge); background: rgb(5 10 20 / 0.85); padding: 0; display: grid; place-items: center; }
+  .zoom button:hover { border-color: var(--cyan); }
 
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat { border: 2px solid var(--edge); background: rgb(13 24 48 / 0.7); padding: 8px 10px; }
@@ -199,7 +209,6 @@
   .rays { position: absolute; left: 50%; top: 42%; width: 520px; height: 520px; margin: -260px 0 0 -260px; background: repeating-conic-gradient(rgb(77 227 255 / 0.14) 0 10deg, transparent 10deg 20deg); animation: spin 6s steps(24) infinite; pointer-events: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .unlock > *:not(.rays) { position: relative; }
-  .unlock .kicker { color: var(--pink); letter-spacing: 0.3em; font-size: 22px; }
   .unlock img { width: 220px; animation: bob 0.7s steps(2) infinite; }
 
   /* ---- Effects ---- */
@@ -249,7 +258,7 @@
       </div>
     </div>
 
-    <button class="big" id="spot">▶ Spotted 1 ◀</button>
+    <button class="big" id="spot"><span id="spot-label">Spotted 1</span></button>
     <button class="ghost" id="spot-other">Log another number</button>
 
     <div class="row">
@@ -298,7 +307,7 @@
 
   <section id="garage" role="tabpanel" aria-labelledby="tab-garage" hidden>
     <div class="frame showroom">
-      <img class="sprite" id="show-car" alt="">
+      <span id="show-car-slot"></span>
       <div class="road-strip"></div>
       <div class="name" id="show-name">Runabout</div>
       <div class="note" id="show-note"></div>
@@ -317,10 +326,10 @@
 </div>
 
 <nav class="tabs" role="tablist">
-  <button role="tab" id="tab-play" aria-selected="true" aria-controls="play"><img class="sprite" alt="">Play</button>
-  <button role="tab" id="tab-map" aria-selected="false" aria-controls="mapview"><img class="sprite" alt="">Map</button>
-  <button role="tab" id="tab-garage" aria-selected="false" aria-controls="garage"><img class="sprite" alt="">Garage</button>
-  <button role="tab" id="tab-top" aria-selected="false" aria-controls="top"><img class="sprite" alt="">Top</button>
+  <button role="tab" id="tab-play" aria-selected="true" aria-controls="play">Play</button>
+  <button role="tab" id="tab-map" aria-selected="false" aria-controls="mapview">Map</button>
+  <button role="tab" id="tab-garage" aria-selected="false" aria-controls="garage">Garage</button>
+  <button role="tab" id="tab-top" aria-selected="false" aria-controls="top">Top</button>
 </nav>
 
 <dialog id="where">
@@ -351,9 +360,9 @@
 <dialog id="unlock">
   <form class="sheet unlock" method="dialog">
     <div class="rays"></div>
-    <div class="kicker">NEW CAR UNLOCKED</div>
-    <img class="sprite" id="unlock-img" alt="">
-    <h3 id="unlock-name">Camper</h3>
+    <span id="unlock-slot"></span>
+    <h3 id="unlock-name">Camper unlocked</h3>
+    <p class="note">It's in your garage.</p>
     <div class="row" style="justify-content: center">
       <button class="chipbtn" value="later">Later</button>
       <button class="save" id="unlock-use" value="use" style="padding-inline: 22px">Drive it</button>
@@ -516,6 +525,11 @@ CARS.forEach((c, i) => { c.level = i + 1; });
 const PIN = [".kkkkk.", "krrrrrk", "krrerrk", "krrrrrk", ".krrrk.", "..krk..", "...k..."];
 const CLOUD = ["......eeee......", "...eeeeeeeeee...", ".eeeeeeeeeeeeee.", "eeeeeeeeeeeeeeee", ".hhhhhhhhhhhhhh."];
 const ICONS = {
+  arrow: ["e.....", "eee...", "eeeee.", "eeeeee", "eeeee.", "eee...", "e....."],
+  plus: ["...ee...", "...ee...", "...ee...", "eeeeeeee", "eeeeeeee", "...ee...", "...ee...", "...ee..."],
+  minus: ["........", "........", "........", "eeeeeeee", "eeeeeeee", "........", "........", "........"],
+  fit: ["eee..eee", "e......e", "e......e", "........", "........", "e......e", "e......e", "eee..eee"],
+  cross: ["ee....ee", "eee..eee", ".eeeeee.", "..eeee..", "..eeee..", ".eeeeee.", "eee..eee", "ee....ee"],
   play: ["kkkkkkkkkkk", "kzsssssssk.", "kzsksksskk.", "kzssssssssk", "kkkkkkkkkkk"].map(r => r.padEnd(11, "k")),
   map: PIN,
   top: [".kkkkkkk.", "kkssssskk", "kkssssskk", ".kssssk..", "..kssk...", "...ks....", "..kkkk...", "..kggk...", "..kkkk..."]
@@ -529,6 +543,10 @@ function spriteCanvas(rows, paint) {
   const g = c.getContext("2d");
   rows.forEach((r, y) => [...r].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
   return c;
+}
+function icon(rows, paint, scale, cls = "") {
+  const i = new Image(); i.className = ("sprite " + cls).trim(); i.alt = ""; i.src = spriteURL(rows, paint, scale);
+  return i;
 }
 function spriteURL(rows, paint, scale = 4) {
   const key = rows.join("|") + paint.join() + scale;
@@ -705,18 +723,8 @@ const scene = (() => {
 
 // ---- Pixel atlas map: drawn small, scaled up crisp, zoom and pan ----
 
-const CITIES = [
-  ["London", 51.51, -0.13, 1], ["Birmingham", 52.48, -1.90, 1], ["Manchester", 53.48, -2.24, 1],
-  ["Leeds", 53.80, -1.55, 1], ["Newcastle", 54.97, -1.61, 1], ["Bristol", 51.45, -2.59, 2],
-  ["Cardiff", 51.48, -3.18, 1, "l"], ["Glasgow", 55.86, -4.25, 1, "l"], ["Edinburgh", 55.95, -3.19, 1],
-  ["Belfast", 54.60, -5.93, 1], ["Aberdeen", 57.15, -2.09, 1], ["Inverness", 57.48, -4.22, 1],
-  ["Plymouth", 50.38, -4.14, 1], ["Norwich", 52.63, 1.30, 1, "l"],
-  ["Liverpool", 53.41, -2.98, 2, "l"], ["Sheffield", 53.38, -1.47, 2], ["Nottingham", 52.95, -1.15, 2],
-  ["Southampton", 50.90, -1.40, 2], ["Exeter", 50.72, -3.53, 2], ["Truro", 50.26, -5.05, 2],
-  ["Hull", 53.74, -0.33, 2, "l"], ["Carlisle", 54.89, -2.93, 2], ["Dundee", 56.46, -2.97, 2],
-  ["Cambridge", 52.21, 0.12, 2], ["Swansea", 51.62, -3.94, 2], ["Oxford", 51.75, -1.26, 2],
-  ["Penzance", 50.12, -5.54, 2, "l"], ["Perth", 56.40, -3.44, 2], ["Leicester", 52.64, -1.13, 2]
-];
+// Towns and villages, most important first (GeoNames, CC BY 4.0). The first dozen get bigger labels.
+const TOWNS = __TOWNS__.map(([name, la, lo], i) => ({ name, xy: toXY(la, lo), major: i < 12 }));
 const ring = (lat, lng, rl, rg, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
   const a = i / n * Math.PI * 2; return [lat + Math.sin(a) * rl, lng + Math.cos(a) * rg];
 });
@@ -759,14 +767,15 @@ function atlas(host, { onTap, heat } = {}) {
   const canvas = document.createElement("canvas"); host.appendChild(canvas);
   const overlay = document.createElement("div"); overlay.className = "overlay"; host.appendChild(overlay);
   const zoomBox = document.createElement("div"); zoomBox.className = "zoom";
-  zoomBox.innerHTML = '<button type="button" aria-label="Zoom in">+</button><button type="button" aria-label="Zoom out">-</button><button type="button" aria-label="Show whole map">#</button>';
+  [["Zoom in", ICONS.plus], ["Zoom out", ICONS.minus], ["Show whole map", ICONS.fit]].forEach(([label, rows]) => {
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", label);
+    b.appendChild(icon(rows, PAINTS.white, 2));
+    zoomBox.appendChild(b);
+  });
   host.parentElement.appendChild(zoomBox);
+  const labels = document.createElement("div"); labels.className = "overlay"; host.insertBefore(labels, overlay);
 
   const fixed = [];
-  CITIES.forEach(([name, la, lo, tier, side]) => {
-    const d = document.createElement("div"); d.className = side ? "city l" : "city"; d.textContent = name;
-    fixed.push({ el: d, xy: toXY(la, lo), minZoom: tier === 1 ? 1 : 2.2 });
-  });
   const seen = new Set();
   ROADS.forEach(([ref, kind, pts]) => {
     if (ref === "M25" || seen.has(ref + pts[0])) return; seen.add(ref + pts[0]);
@@ -839,14 +848,47 @@ function atlas(host, { onTap, heat } = {}) {
     if (show) { item.el.style.left = px * 100 + "%"; item.el.style.top = py * 100 + "%"; }
   }
   let queued = false;
+  // Town names: biggest first, each kept only if it fits without overlapping one already placed.
+  // Zooming in frees space, so smaller towns and villages appear.
+  const pool = [];
+  function labelTowns() {
+    const r = host.getBoundingClientRect();
+    if (!r.width) return;
+    const k = r.width / v.w, max = Math.min(90, Math.round(14 * Math.pow(zoom(), 0.85)));
+    const boxes = [[r.width - 52, 0, r.width, 132]]; // keep clear of the zoom buttons
+    [...fixed, ...marks].forEach(m => {
+      if (m.el.hidden) return;
+      const b = m.el.getBoundingClientRect();
+      if (b.width) boxes.push([b.left - r.left - 2, b.top - r.top - 2, b.right - r.left + 2, b.bottom - r.top + 2]);
+    });
+    const hits = b => boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+    let used = 0;
+    for (const t of TOWNS) {
+      if (used >= max) break;
+      const x = (t.xy[0] - v.x) * k, y = (t.xy[1] - v.y) * k;
+      if (x < 2 || y < 9 || x > r.width - 2 || y > r.height - 9) continue;
+      const w = Math.ceil(t.name.length * (t.major ? 8.6 : 7.6)) + 12, h = t.major ? 20 : 17;
+      let box = [x - 4, y - h / 2, x - 4 + w, y + h / 2], left = false;
+      if (box[2] > r.width || hits(box)) {
+        box = [x + 4 - w, y - h / 2, x + 4, y + h / 2]; left = true;
+        if (box[0] < 0 || hits(box)) continue;
+      }
+      boxes.push(box);
+      const el = pool[used] || (pool[used] = labels.appendChild(document.createElement("div")));
+      el.className = "city" + (left ? " l" : "") + (t.major ? " major" : "");
+      el.textContent = t.name; el.style.left = x + "px"; el.style.top = y + "px"; el.hidden = false;
+      used++;
+    }
+    for (let i = used; i < pool.length; i++) pool[i].hidden = true;
+  }
   function apply() {
-    v.w = Math.min(W, Math.max(W / 16, v.w)); v.h = v.w * H / W;
+    v.w = Math.min(W, Math.max(W / 32, v.w)); v.h = v.w * H / W;
     v.x = Math.min(W - v.w, Math.max(0, v.x)); v.y = Math.min(H - v.h, Math.max(0, v.y));
-    fixed.forEach(place); marks.forEach(place);
+    fixed.forEach(place); marks.forEach(place); labelTowns();
     if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; draw(); }); }
   }
   function zoomAt(f, mx, my) {
-    const nw = Math.min(W, Math.max(W / 16, v.w / f)), k = nw / v.w;
+    const nw = Math.min(W, Math.max(W / 32, v.w / f)), k = nw / v.w;
     v.x = mx - (mx - v.x) * k; v.y = my - (my - v.y) * k; v.w = nw; apply();
   }
   const toMap = (cx, cy) => {
@@ -878,7 +920,7 @@ function atlas(host, { onTap, heat } = {}) {
     const r = host.getBoundingClientRect();
     if (pts.size === 2 && pinch) {
       const [a, b] = [...pts.values()];
-      const nw = Math.min(W, Math.max(W / 16, pinch.w * pinch.d / Math.hypot(a[0] - b[0], a[1] - b[1]))), k = nw / v.w;
+      const nw = Math.min(W, Math.max(W / 32, pinch.w * pinch.d / Math.hypot(a[0] - b[0], a[1] - b[1]))), k = nw / v.w;
       v.x = pinch.mid[0] - (pinch.mid[0] - v.x) * k; v.y = pinch.mid[1] - (pinch.mid[1] - v.y) * k; v.w = nw; apply();
     } else if (pts.size === 1 && start) {
       const dx = e.clientX - start.cx, dy = e.clientY - start.cy;
@@ -940,7 +982,7 @@ function render() {
   if (lastN !== null && lastN !== me.n) { const el = $("next"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
   lastN = me.n;
   $("next").textContent = me.n;
-  $("spot").textContent = "▶ Spotted " + me.n + " ◀";
+  $("spot-label").textContent = "Spotted " + me.n;
   updateVerdict();
   $("undo").disabled = me.sightings.length === 0;
 
@@ -964,7 +1006,8 @@ function render() {
     let extra;
     if (!s.run) {
       extra = document.createElement("button");
-      extra.className = "remove"; extra.textContent = "×"; extra.setAttribute("aria-label", "Remove " + s.n);
+      extra.className = "remove"; extra.setAttribute("aria-label", "Remove " + s.n);
+      extra.appendChild(icon(ICONS.cross, PAINTS.white, 2));
       extra.onclick = () => { me = { ...me, spots: me.spots.filter(x => x.at !== s.at) }; save(); };
     }
     log.appendChild(logRow(s.n, !s.run, fmtWhere(s), fmtWhen(s.at), extra));
@@ -974,7 +1017,7 @@ function render() {
   $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
   $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
   $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
-  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved.";
+  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Towns: GeoNames (CC BY 4.0).";
   renderMapView();
   renderGarage();
   renderBoard();
@@ -1027,7 +1070,7 @@ function heatPoints() {
 
 function renderGarage() {
   const lvl = levelOf(xpOf(me)), { car, paint } = rideOf(me);
-  $("show-car").src = spriteURL(car.rows, paint, 8);
+  $("show-car-slot").replaceChildren(icon(car.rows, paint, 8, "show-car"));
   $("show-name").textContent = car.name;
   $("show-note").textContent = car.paint ? "Comes in its own colours." : "LV " + lvl + " driver";
 
@@ -1172,8 +1215,8 @@ function logSighting(where) {
 }
 
 function showUnlock(car) {
-  $("unlock-img").src = spriteURL(car.rows, PAINTS[car.paint || me.paint] || PAINTS.red, 8);
-  $("unlock-name").textContent = car.name;
+  $("unlock-slot").replaceChildren(icon(car.rows, PAINTS[car.paint || me.paint] || PAINTS.red, 8));
+  $("unlock-name").textContent = car.name + " unlocked";
   $("unlock").returnValue = "";
   $("unlock").onclose = () => {
     if ($("unlock").returnValue === "use") { me = { ...me, car: car.id }; save(); scene.drive(); }
@@ -1212,10 +1255,12 @@ for (const [panel, tab] of Object.entries(TABS)) {
     window.scrollTo(0, 0);
   });
 }
-$("tab-play").querySelector("img").src = spriteURL(ICONS.play, PAINTS.red, 3);
-$("tab-map").querySelector("img").src = spriteURL(ICONS.map, PAINTS.red, 3);
-$("tab-garage").querySelector("img").src = spriteURL(RUNABOUT, PAINTS.cyan, 2);
-$("tab-top").querySelector("img").src = spriteURL(ICONS.top, PAINTS.red, 3);
+$("spot").prepend(icon(ICONS.arrow, PAINTS.white, 3, "arrow"));
+$("spot").append(icon(ICONS.arrow, PAINTS.white, 3, "arrow flip"));
+$("tab-play").prepend(icon(ICONS.play, PAINTS.red, 3));
+$("tab-map").prepend(icon(ICONS.map, PAINTS.red, 3));
+$("tab-garage").prepend(icon(RUNABOUT, PAINTS.cyan, 2));
+$("tab-top").prepend(icon(ICONS.top, PAINTS.red, 3));
 for (const [id, mine] of [["show-all", false], ["show-mine", true]]) {
   $(id).addEventListener("click", () => {
     showMine = mine;
