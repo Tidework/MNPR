@@ -17,7 +17,8 @@ To change it, edit `src/page.html` (the map outlines live in `src/uk.json`), the
 The look is 16-bit pixel art: a sky-and-road scene with your car, ten unlockable cars, XP for every plate you log (more for pins and place names), and a pixel heat map.
 
 - **Play**: shows the number you need next. Type a plate to check it, tap **Spotted**, then drop a pin on the map to log where you were. **Log another number** adds any other number you've seen to the map for other players, without changing your run.
-- **Map**: a road-atlas style heat map of sightings. Zoom and drag to explore. **Find a number** shows exactly where that number has been seen. Friends appear as plates showing the number they're on, roughly where they last logged a plate.
+- **Map**: a pixel heat map of sightings. Zoom and drag to explore. **Find a number** shows exactly where that number has been seen. Friends appear as their car with the number they're on, roughly where they last logged a plate.
+- **Garage**: pick your car and paint. New cars unlock as you level up.
 - **Top**: who has reached the highest number.
 
 Privacy: plates are never saved. Pins are exact (about 10 m) and visible to everyone with access; friends' positions are shown to about 1 km.
