@@ -29,8 +29,9 @@ Design checks use [Impeccable](https://github.com/pbakaus/impeccable) (Apache 2.
 
 ## Where the data lives
 
-- Opened as a plain web page, progress is saved in that browser only.
-- Run as a claude.ai artifact, sightings go to a shared store, so everyone with access shares one map and leaderboard.
-- To open it up to anyone (friends without a Claude account, or nationally), the next step is to host the page and give it a small shared database.
+- **Online** (`index.html` on GitHub Pages, with `src/config.json` filled in): sign in with an emailed link. Your run, car and sightings are stored in Supabase; the map, leaderboard and friends are shared. See `SETUP.md`.
+- **On one device** (the claude.ai preview, or with no config): progress stays in that browser.
 
-Map outlines: [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+## Confirmed and unconfirmed plates
+
+Type the full plate when you log a sighting and it's checked: a UK plate format, showing your number, and (once the DVLA key is set up) a real registered vehicle. Confirmed sightings earn full XP; just the number earns less. Plates are never stored.

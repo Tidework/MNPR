@@ -57,7 +57,7 @@
   @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translateX(4px); } 95% { transform: translateX(-3px); } 97% { transform: translateX(2px); } }
   .tagline { position: relative; flex-basis: 100%; font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: -1px 0 var(--pink), 1px 0 var(--cyan), 0 0 6px rgb(5 10 20 / 0.5); animation: flicker 5s steps(1) infinite; }
   @keyframes flicker { 0%, 40%, 44%, 100% { opacity: 1; transform: none; } 41% { opacity: 0.4; transform: translateX(2px); } 43% { opacity: 0.8; transform: translateX(-1px); } }
-  .mode { flex: none; font-size: 16px; letter-spacing: 0.18em; color: var(--abyss); background: rgb(232 241 255 / 0.75); padding: 2px 8px; border: 2px solid var(--abyss); }
+  .mode { cursor: pointer; flex: none; font-size: 16px; letter-spacing: 0.18em; color: var(--abyss); background: rgb(232 241 255 / 0.75); padding: 2px 8px; border: 2px solid var(--abyss); }
 
   /* ---- Frames, buttons, text ---- */
   .frame { background: var(--panel); border: 3px solid var(--cyan); box-shadow: inset 0 0 0 3px var(--abyss), 0 0 14px rgb(77 227 255 / 0.25); padding: 14px; }
@@ -125,6 +125,9 @@
   .what { display: flex; flex-direction: column; min-width: 0; }
   .what b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .what span { font-size: 17px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tick { font-size: 14px; letter-spacing: 0.08em; color: var(--abyss); background: var(--go); padding: 0 4px; margin-right: 6px; }
+  .what .tick { align-self: flex-start; margin-top: 2px; }
+  .row-actions { display: flex; gap: 6px; }
   .remove { border: 0; background: none; padding: 6px; opacity: 0.6; }
   .remove:hover { opacity: 1; }
   .key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 17px; color: var(--muted); margin: -4px 0 0; }
@@ -234,7 +237,7 @@
     <div class="scanlines"></div>
     <div class="hud">
       <h1 class="logo" data-text="MNPR">MNPR</h1>
-      <span class="mode" id="mode">THIS DEVICE</span>
+      <button class="mode" id="mode" type="button">THIS DEVICE</button>
       <div class="tagline">Manual Number Plate Recognition</div>
     </div>
   </header>
@@ -254,12 +257,9 @@
       </div>
     </div>
 
-    <div class="field">
-      <label class="label" for="plate-input">Check a plate</label>
-      <div class="check-row">
-        <input class="text plate-text" id="plate-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB01 CDE">
-        <span class="verdict" id="verdict"></span>
-      </div>
+    <div class="row quiet-frame" id="signin-cta" hidden>
+      <span class="note" style="flex: 1">Sign in to keep your run on every device and join the map.</span>
+      <button class="chipbtn" id="signin-cta-btn" type="button">Sign in</button>
     </div>
 
     <button class="big" id="spot"><span id="spot-label">Spotted 1</span></button>
@@ -277,7 +277,7 @@
     </div>
 
     <h2>Your log</h2>
-    <p class="key"><span><span class="chip">7</span>Your run</span><span><span class="chip front">7</span>Logged for others</span></p>
+    <p class="key"><span><span class="chip">7</span>Your run</span><span><span class="chip front">7</span>Logged for others</span><span><span class="tick">OK</span>Confirmed plate</span></p>
     <ul class="log" id="log"></ul>
   </section>
 
@@ -306,6 +306,10 @@
       <ul class="log" id="found" style="margin-top: 14px"></ul>
     </div>
     <h2>Friends</h2>
+    <form class="row" id="friend-form">
+      <input class="text" id="friend-name" style="flex: 1" maxlength="20" placeholder="Their username" autocomplete="off" aria-label="Friend's username">
+      <button class="chipbtn" type="submit">Add</button>
+    </form>
     <ul class="log" id="friends"></ul>
   </section>
 
@@ -343,6 +347,11 @@
       <label class="label" for="other-num">Number</label>
       <input class="text num-text" id="other-num" inputmode="numeric" maxlength="4" placeholder="23">
     </div>
+    <div class="field">
+      <label class="label" for="full-plate">Full plate (optional)</label>
+      <input class="text plate-text" id="full-plate" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB01 CDE">
+      <span class="verdict" id="plate-verdict"></span>
+    </div>
     <div class="map-frame">
       <div class="map picking" id="pick-map"></div>
     </div>
@@ -374,9 +383,44 @@
   </form>
 </dialog>
 
+<dialog id="account">
+  <div class="sheet">
+    <h3 id="account-title">Sign in</h3>
+    <form class="field" id="signin-form">
+      <label class="label" for="email">Email</label>
+      <input class="text" id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+      <button class="save" type="submit">Email me a link</button>
+      <p class="note">No password. Tap the link we send and you're in.</p>
+    </form>
+    <p class="note" id="link-sent" hidden></p>
+    <form class="field" id="username-form" hidden>
+      <label class="label" for="username">Pick a username</label>
+      <input class="text" id="username" maxlength="20" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="username" placeholder="plate_spotter">
+      <p class="note">3 to 20 letters, numbers or _. Friends find you by it.</p>
+      <button class="save" type="submit">Start playing</button>
+    </form>
+    <div class="field" id="signed-in" hidden>
+      <p id="who" style="margin: 0"></p>
+      <p class="note">We keep your email, username, car and sightings. Plates are never saved: confirmed ones keep only a scrambled check code. Other players see the map rounded to about 1 km, with no names. Friends you accept see your number and roughly where you last logged.</p>
+      <div class="row">
+        <button class="chipbtn" id="sign-out" type="button">Sign out</button>
+        <span class="spacer"></span>
+        <button class="chipbtn" id="delete-account" type="button">Delete account</button>
+      </div>
+      <div class="row note" id="delete-confirm" hidden>
+        <span>Delete your account and every sighting? This can't be undone.</span>
+        <button class="chipbtn" id="delete-yes" type="button">Delete</button>
+        <button class="chipbtn" id="delete-no" type="button">Keep</button>
+      </div>
+    </div>
+    <div class="row"><span class="spacer"></span><button class="chipbtn" id="account-close" type="button">Close</button></div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="fx" id="fx"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 // Simplified Natural Earth outlines (public domain), projected for this map.
 const PATHS = __PATHS__;
@@ -565,44 +609,47 @@ function spriteURL(rows, paint, scale = 4) {
 }
 
 // ---- Game state ----
+// Without CONFIG (the claude.ai preview, or a copy opened from disk) the game runs on this device only.
+// With CONFIG it signs in with Supabase: your run, car and sightings live in the database, and the map,
+// leaderboard and friends come from everyone.
 
+const CONFIG = __CONFIG__;
 const KEY = "mnpr.v1";
 const $ = id => document.getElementById(id);
+const sb = CONFIG.supabaseUrl && window.supabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey) : null;
 
+// Your game. Sightings: { id?, n, at, lat?, lng?, place?, confirmed }.
 let me = { n: 1, sightings: [], spots: [], car: "runabout", paint: "red" };
-let players = {};
-let mode = "local";
-let db = null, user = null, uid = null, synced = false;
-let writing = Promise.resolve();
-let showMine = false, pin = null, sheetMode = "run";
+// Signed in: { id, email, username } (username is null until chosen).
+let account = null;
+// What everyone else sees: map points rounded to about 1 km, the leaderboard, totals and your friends.
+let world = { heat: [], board: [], stats: { sightings: 0, players: 0, highest: 0 }, friends: [] };
+let showMine = false, pin = null, sheetMode = "run", busy = false;
 
-// The rule: the plate's digits must be exactly the number, leading zeros allowed.
-function plateCounts(plate, n) {
-  const digits = plate.replace(/\D/g, "");
-  return digits !== "" && digits.replace(/^0+/, "") === String(n);
-}
+__PLATES__
 
-// XP: 10 per run plate, 5 per plate logged for others, +3 for a pin, +2 for a place name, +20 on every tenth number.
-function xpOf(p) {
-  const extra = s => (s.lat != null ? 3 : 0) + (s.place ? 2 : 0);
-  return p.sightings.reduce((t, s) => t + 10 + extra(s) + (s.n % 10 === 0 ? 20 : 0), 0) +
-    (p.spots || []).reduce((t, s) => t + 5 + extra(s), 0);
+// XP must match sighting_xp() in supabase/migrations.
+// Run: 10 confirmed, 4 unconfirmed. For others: 5 confirmed, 2 unconfirmed.
+// +3 for a pin, +2 for a place name, +20 on every tenth number of a run.
+function sightingXp(s, run) {
+  const confirmed = s.confirmed !== false; // sightings from before confirming existed count in full
+  return (run ? (confirmed ? 10 : 4) + (s.n % 10 === 0 ? 20 : 0) : (confirmed ? 5 : 2))
+    + (s.lat != null ? 3 : 0) + (s.place ? 2 : 0);
 }
+const xpOf = p => p.sightings.reduce((t, s) => t + sightingXp(s, true), 0) + p.spots.reduce((t, s) => t + sightingXp(s, false), 0);
 const xpFor = L => 25 * L * (L - 1);
 function levelOf(xp) { let L = 1; while (xp >= xpFor(L + 1)) L++; return L; }
-
 const best = p => p.sightings.reduce((m, s) => Math.max(m, s.n), 0);
-const allSeen = p => [...p.sightings, ...(p.spots || [])];
-const lastSeen = p => allSeen(p).filter(s => s.lat != null).sort((a, b) => b.at - a.at)[0];
 
-function rideOf(p) {
-  const lvl = levelOf(xpOf(p));
-  let car = CARS.find(c => c.id === p.car);
-  if (!car || car.level > lvl) car = CARS[0];
-  const paint = PAINTS[car.paint || p.paint] || PAINTS.red;
-  return { car, paint };
+// The car someone drives, held back to one their level has unlocked.
+function rideOf({ car: id, paint: pid }, xp) {
+  let car = CARS.find(c => c.id === id);
+  if (!car || car.level > levelOf(xp)) car = CARS[0];
+  return { car, paint: PAINTS[car.paint || pid] || PAINTS.red };
 }
-const rideURL = (p, scale) => { const { car, paint } = rideOf(p); return spriteURL(car.rows, paint, scale); };
+const rideURL = (p, xp, scale) => { const { car, paint } = rideOf(p, xp); return spriteURL(car.rows, paint, scale); };
+
+// ---- On this device ----
 
 function loadLocal() {
   try {
@@ -612,48 +659,117 @@ function loadLocal() {
     }
   } catch (e) {}
 }
-
-function save() {
+function saveLocal() {
   try { localStorage.setItem(KEY, JSON.stringify(me)); } catch (e) {}
-  if (mode === "shared") {
-    const body = { ...me, best: best(me), updated: Date.now() };
-    writing = writing
-      .then(() => db.doc("players/" + uid).set(body))
-      .catch(e => toast(e && e.code === "quota_exceeded" ? "The shared map is full." : "Couldn't save to the shared map."));
-  }
+}
+// Signed out, the map and leaderboard show just you.
+function localWorld() {
+  const pts = [...me.sightings, ...me.spots].filter(s => s.lat != null);
+  return {
+    heat: pts.map(s => ({ lat: s.lat, lng: s.lng, n: s.n, day: s.at })),
+    board: me.sightings.length ? [{ username: "You", car: me.car, paint: me.paint, best: best(me), xp: xpOf(me), mine: true }] : [],
+    stats: { sightings: me.sightings.length + me.spots.length, players: me.sightings.length || me.spots.length ? 1 : 0, highest: best(me) },
+    friends: []
+  };
+}
+
+// ---- Online ----
+
+const online = () => !!(sb && account && account.username);
+const fail = e => { toast((e && e.message) || "Something went wrong. Try again."); throw e; };
+const call = async (q) => { const { data, error } = await q; if (error) fail(error); return data; };
+const fromRow = r => ({ id: r.id, n: r.n, at: Date.parse(r.created_at), lat: r.lat, lng: r.lng, place: r.place, confirmed: !!r.checked_by });
+
+async function loadMine() {
+  const [profile, rows] = await Promise.all([
+    call(sb.from("profiles").select("*").eq("id", account.id).maybeSingle()),
+    call(sb.from("sightings").select("*").eq("user_id", account.id).order("created_at"))
+  ]);
+  if (!profile) { account.username = null; return; }
+  account.username = profile.username;
+  me = {
+    n: profile.n, car: profile.car, paint: profile.paint,
+    sightings: rows.filter(r => r.kind === "run").map(fromRow),
+    spots: rows.filter(r => r.kind === "spot").map(fromRow)
+  };
+}
+
+async function loadWorld() {
+  if (!sb) { world = localWorld(); return; }
+  const [heat, board, stats, friends] = await Promise.all([
+    call(sb.rpc("heat")), call(sb.rpc("leaderboard")), call(sb.rpc("stats")),
+    online() ? call(sb.rpc("my_friends")) : Promise.resolve([])
+  ]);
+  world = {
+    heat: heat.map(h => ({ ...h, day: Date.parse(h.day) })),
+    board: board.map(b => ({ ...b, mine: online() && b.username === account.username })),
+    stats: stats[0] || world.stats,
+    friends
+  };
+}
+
+// Reload everything and redraw. Signed out (or no database), your game lives on this device.
+async function refresh() {
+  try {
+    if (online()) await loadMine();
+    else loadLocal();
+    await loadWorld();
+  } catch (e) {}
   render();
 }
 
-async function connect() {
-  if (!window.claude || !window.claude.use) return;
-  const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
-  if (!d || !u) return;
-  const id = await u.id();
-  if (!id) return;
-  db = d; user = u; uid = id; mode = "shared";
-  db.collection("players").onSnapshot(snap => {
-    players = {};
-    snap.docs.forEach(doc => {
-      const p = doc.exists && doc.data();
-      if (p && Array.isArray(p.sightings)) players[doc.id] = { ...p, spots: Array.isArray(p.spots) ? p.spots : [] };
-    });
-    if (!synced) {
-      synced = true;
-      const mine = players[uid];
-      if (mine) me = { n: mine.n, sightings: mine.sightings.slice(), spots: mine.spots.slice(), car: mine.car || me.car, paint: mine.paint || me.paint };
-      else if (me.sightings.length || me.spots.length) save(); // bring this device's run onto the shared map
-    }
-    render();
-  }, () => toast("Lost the shared map. Reload to reconnect."));
+async function onAuth(session) {
+  account = session ? { id: session.user.id, email: session.user.email, username: null } : null;
+  if (account) {
+    try { await loadMine(); } catch (e) {}
+    if (!account.username) openAccount();
+  }
+  await refresh();
 }
 
-function allPlayers() { return mode === "shared" ? { ...players, [uid]: me } : { you: me }; }
-const isMe = id => id === uid || id === "you";
-async function namesFor(ids) {
-  const ps = user ? await user.profiles(ids) : {};
-  const out = {};
-  ids.forEach(id => { out[id] = isMe(id) ? "You" : ((ps[id] && ps[id].name) || "Someone"); });
-  return out;
+// ---- Actions: each works online or on this device ----
+
+async function addSighting(kind, n, where, plate) {
+  const confirmed = !!plate;
+  if (online()) {
+    if (confirmed) {
+      const { data, error } = await sb.functions.invoke("confirm-plate", { body: { kind, n, plate, ...where } });
+      if (error) {
+        let msg = "Couldn't check that plate. Try again.";
+        try { msg = (await error.context.json()).error || msg; } catch (e) {}
+        toast(msg); throw error;
+      }
+      return data.vehicle;
+    }
+    await call(sb.rpc("log_sighting", { p_kind: kind, p_n: kind === "spot" ? n : null, p_lat: where.lat ?? null, p_lng: where.lng ?? null, p_place: where.place ?? null }));
+    return null;
+  }
+  const s = { at: Date.now(), ...where, confirmed };
+  if (kind === "run") me = { ...me, n: me.n + 1, sightings: [...me.sightings, { n: me.n, ...s }] };
+  else me = { ...me, spots: [...me.spots, { n, ...s }] };
+  saveLocal();
+  return null;
+}
+async function undoLast() {
+  if (online()) await call(sb.rpc("undo_last_run"));
+  else {
+    const last = me.sightings[me.sightings.length - 1];
+    if (!last) return;
+    me = { ...me, n: last.n, sightings: me.sightings.slice(0, -1) }; saveLocal();
+  }
+}
+async function startAgain() {
+  if (online()) await call(sb.rpc("start_again"));
+  else { me = { ...me, n: 1 }; saveLocal(); }
+}
+async function removeSpot(s) {
+  if (online()) await call(sb.from("sightings").delete().eq("id", s.id));
+  else { me = { ...me, spots: me.spots.filter(x => x.at !== s.at) }; saveLocal(); }
+}
+async function setRide(change) {
+  me = { ...me, ...change };
+  if (online()) await call(sb.from("profiles").update(change).eq("id", account.id));
+  else saveLocal();
 }
 
 // ---- The scene: sky, hills, road and your car, drawn at 160 × 75 pixels ----
@@ -968,7 +1084,14 @@ function atlas(host, { onTap, heat } = {}) {
 // ---- Rendering ----
 
 const fmtWhen = t => new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-const fmtWhere = s => s.place || (s.lat == null ? "No location" : `${s.lat.toFixed(3)}, ${s.lng.toFixed(3)}`);
+// The nearest labelled city or town, for points that have no place name.
+function nearest(lat, lng) {
+  const [x, y] = toXY(lat, lng);
+  let bestT = null, bd = Infinity;
+  for (const t of TOWNS) { const d = Math.hypot(t.xy[0] - x, t.xy[1] - y); if (d < bd) { bd = d; bestT = t; } }
+  return bestT && bd < 40 ? "Near " + bestT.name : `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+}
+const fmtWhere = s => s.place || (s.lat == null ? "No location" : nearest(s.lat, s.lng));
 function ago(t) {
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 60) return m <= 1 ? "just now" : m + " min ago";
@@ -977,29 +1100,34 @@ function ago(t) {
 }
 function li(cls, html) { const e = document.createElement("li"); if (cls) e.className = cls; e.innerHTML = html; return e; }
 function emptyRow(list, text) { const e = li("empty", ""); e.textContent = text; list.appendChild(e); }
-function logRow(chip, front, main, sub, extra) {
+function logRow(chip, front, main, sub, extra, confirmed) {
   const e = li("", '<span class="chip"></span><span class="what"><b></b><span></span></span>');
   e.children[0].textContent = chip; if (front) e.children[0].classList.add("front");
   e.querySelector("b").textContent = main; e.querySelector(".what span").textContent = sub;
+  if (confirmed) { const t = document.createElement("span"); t.className = "tick"; t.textContent = "OK"; e.querySelector("b").prepend(t); }
   e.appendChild(extra || document.createElement("span"));
   return e;
 }
-function personRow(rank, p, name, sub, chip) {
+function personRow(rank, p, xp, name, sub, chip) {
   const e = li("who-row", '<span class="rank"></span><img class="sprite" alt="" width="56"><span class="what"><b></b><span></span></span><span class="chip"></span>');
-  e.children[0].textContent = rank; e.children[1].src = rideURL(p, 2);
+  e.children[0].textContent = rank; e.children[1].src = rideURL(p, xp, 2);
   e.querySelector("b").textContent = name; e.querySelector(".what span").textContent = sub;
-  e.children[3].textContent = chip;
+  if (chip == null) e.children[3].remove(); else e.children[3].textContent = chip;
   return e;
+}
+function button(label, onclick) {
+  const b = document.createElement("button"); b.type = "button"; b.className = "chipbtn"; b.textContent = label;
+  b.onclick = onclick; return b;
 }
 
 let lastN = null;
 function render() {
-  $("mode").textContent = mode === "shared" ? "SHARED MAP" : "THIS DEVICE";
+  $("mode").textContent = online() ? "@" + account.username : (sb ? "SIGN IN" : "THIS DEVICE");
+  $("signin-cta").hidden = !sb || online();
   if (lastN !== null && lastN !== me.n) { const el = $("next"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
   lastN = me.n;
   $("next").textContent = me.n;
   $("spot-label").textContent = "Spotted " + me.n;
-  updateVerdict();
   $("undo").disabled = me.sightings.length === 0;
 
   const xp = xpOf(me), lvl = levelOf(xp), lo = xpFor(lvl), hi = xpFor(lvl + 1);
@@ -1010,7 +1138,7 @@ function render() {
   const next = CARS.find(c => c.level > lvl);
   $("next-car").textContent = next ? `${next.name} at LV ${next.level}` : "Every car unlocked";
 
-  const { car, paint } = rideOf(me);
+  const { car, paint } = rideOf(me, xp);
   scene.setCar(car.rows, paint);
 
   const log = $("log");
@@ -1024,40 +1152,60 @@ function render() {
       extra = document.createElement("button");
       extra.className = "remove"; extra.setAttribute("aria-label", "Remove " + s.n);
       extra.appendChild(icon(ICONS.cross, PAINTS.white, 2));
-      extra.onclick = () => { me = { ...me, spots: me.spots.filter(x => x.at !== s.at) }; save(); };
+      extra.onclick = () => removeSpot(s).then(refresh, () => {});
     }
-    log.appendChild(logRow(s.n, !s.run, fmtWhere(s), fmtWhen(s.at), extra));
+    log.appendChild(logRow(s.n, !s.run, fmtWhere(s), fmtWhen(s.at), extra, s.confirmed !== false));
   });
 
-  const ps = Object.values(allPlayers());
-  $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
-  $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
-  $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
-  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Places: GeoNames (CC BY 4.0). Roads: contains OS data © Crown copyright and database right 2026.";
+  $("s-total").textContent = world.stats.sightings;
+  $("s-players").textContent = world.stats.players;
+  $("s-best").textContent = world.stats.highest;
+  $("map-note").textContent = (sb ? "Everyone's sightings, rounded to about 1 km. Friends show where they last logged a plate. "
+    : "Only your sightings, on this device. ")
+    + "Plates are never saved. Map: Natural Earth. Places: GeoNames (CC BY 4.0). Roads: contains OS data © Crown copyright and database right 2026.";
   renderMapView();
   renderGarage();
   renderBoard();
 }
 
-async function renderMapView() {
-  const all = allPlayers();
-  const ids = Object.keys(all).filter(id => allSeen(all[id]).length);
-  const names = await namesFor(ids);
-
-  const marks = [];
+function renderFriends() {
   const list = $("friends");
   list.replaceChildren();
-  ids.sort((a, b) => (lastSeen(all[b]) || { at: 0 }).at - (lastSeen(all[a]) || { at: 0 }).at).forEach((id, i) => {
-    const p = all[id], last = lastSeen(p);
-    list.appendChild(personRow("", p, names[id], last ? `${fmtWhere(last)} · ${ago(last.at)}` : "No location yet", p.n));
-    if (!last) return;
-    const d = document.createElement("div"); d.className = "friend"; d.style.animationDelay = (i * 0.17) + "s";
-    d.innerHTML = '<b class="chip"></b><img class="sprite" alt="" width="48"><span></span>';
-    d.children[0].textContent = p.n; d.children[1].src = rideURL(p, 2); d.children[2].textContent = names[id];
-    marks.push({ el: d, xy: toXY(rough(last.lat), rough(last.lng)) });
+  $("friend-form").hidden = !online();
+  if (!online()) return emptyRow(list, sb ? "Sign in to add friends." : "Friends need the online version.");
+  if (!world.friends.length) return emptyRow(list, "Add a friend by their username. They see you once they accept.");
+  const marks = [];
+  world.friends.forEach((f, i) => {
+    let row;
+    if (f.status === "accepted") {
+      const where = f.last_lat != null ? `${f.last_place || nearest(f.last_lat, f.last_lng)} · ${ago(Date.parse(f.last_at))}` : "No location yet";
+      row = personRow("", f, f.xp, f.username, where, f.n);
+      if (f.last_lat != null) {
+        const d = document.createElement("div"); d.className = "friend"; d.style.animationDelay = (i * 0.17) + "s";
+        d.innerHTML = '<b class="chip"></b><img class="sprite" alt="" width="48"><span></span>';
+        d.children[0].textContent = f.n; d.children[1].src = rideURL(f, f.xp, 2); d.children[2].textContent = f.username;
+        marks.push({ el: d, xy: toXY(f.last_lat, f.last_lng) });
+      }
+      const x = document.createElement("button"); x.className = "remove"; x.setAttribute("aria-label", "Remove " + f.username);
+      x.appendChild(icon(ICONS.cross, PAINTS.white, 2));
+      x.onclick = () => call(sb.rpc("remove_friend", { p_other: f.id })).then(refresh, () => {});
+      row.appendChild(x);
+    } else if (f.incoming) {
+      row = personRow("", f, 0, f.username, "Wants to be friends", null);
+      const acts = document.createElement("span"); acts.className = "row-actions";
+      acts.append(button("Accept", () => call(sb.rpc("respond_friend", { p_requester: f.id, p_accept: true })).then(refresh, () => {})),
+        button("No", () => call(sb.rpc("respond_friend", { p_requester: f.id, p_accept: false })).then(refresh, () => {})));
+      row.appendChild(acts);
+    } else {
+      row = personRow("", f, 0, f.username, "Waiting for them to accept", null);
+    }
+    list.appendChild(row);
   });
-  if (!ids.length) emptyRow(list, "No one on the map yet.");
+  return marks;
+}
 
+function renderMapView() {
+  const marks = renderFriends() || [];
   const n = parseInt($("find").value, 10);
   const found = $("found");
   found.replaceChildren();
@@ -1065,12 +1213,10 @@ async function renderMapView() {
   const hits = [];
   if (n) {
     $("found-title").textContent = "Where " + n + " has been seen";
-    const seen = ids.filter(id => !showMine || isMe(id))
-      .flatMap(id => allSeen(all[id]).filter(s => s.n === n).map(s => ({ ...s, who: names[id] })))
-      .sort((a, b) => b.at - a.at);
-    seen.forEach(s => {
-      found.appendChild(logRow(n, true, fmtWhere(s), `${s.who} · ${ago(s.at)}`));
-      if (s.lat != null) { const d = document.createElement("div"); d.className = "hit"; hits.push({ el: d, xy: toXY(s.lat, s.lng) }); }
+    const seen = heatList().filter(h => h.n === n).sort((a, b) => b.day - a.day);
+    seen.slice(0, 30).forEach(h => {
+      found.appendChild(logRow(n, true, h.place || nearest(h.lat, h.lng), ago(h.day)));
+      const d = document.createElement("div"); d.className = "hit"; hits.push({ el: d, xy: toXY(h.lat, h.lng) });
     });
     if (!seen.length) emptyRow(found, "No one has logged " + n + " yet.");
   }
@@ -1078,14 +1224,16 @@ async function renderMapView() {
   heatMap.refresh();
 }
 
-function heatPoints() {
-  const all = allPlayers();
-  return Object.keys(all).filter(id => !showMine || isMe(id))
-    .flatMap(id => allSeen(all[id])).filter(s => s.lat != null).map(s => toXY(s.lat, s.lng));
+// "Mine" shows your exact pins; "Everyone" shows the shared, rounded map.
+function heatList() {
+  return showMine
+    ? [...me.sightings, ...me.spots].filter(s => s.lat != null).map(s => ({ lat: s.lat, lng: s.lng, n: s.n, day: s.at, place: s.place }))
+    : world.heat;
 }
+const heatPoints = () => heatList().map(h => toXY(h.lat, h.lng));
 
 function renderGarage() {
-  const lvl = levelOf(xpOf(me)), { car, paint } = rideOf(me);
+  const xp = xpOf(me), lvl = levelOf(xp), { car, paint } = rideOf(me, xp);
   $("show-car-slot").replaceChildren(icon(car.rows, paint, 8, "show-car"));
   $("show-name").textContent = car.name;
   $("show-note").textContent = car.paint ? "Comes in its own colours." : "LV " + lvl + " driver";
@@ -1096,7 +1244,7 @@ function renderGarage() {
     const b = document.createElement("button");
     b.className = "swatch"; b.style.background = p[0]; b.setAttribute("aria-label", k);
     b.setAttribute("aria-pressed", String(me.paint === k));
-    b.onclick = () => { me = { ...me, paint: k }; save(); if (car.paint) toast(car.name + " keeps its own colours."); };
+    b.onclick = () => { setRide({ paint: k }).catch(() => {}); render(); if (car.paint) toast(car.name + " keeps its own colours."); };
     sw.appendChild(b);
   });
 
@@ -1113,29 +1261,20 @@ function renderGarage() {
     b.children[2].textContent = locked ? "LV " + c.level : (c.id === car.id ? "Driving" : "Unlocked");
     b.onclick = () => {
       if (locked) return toast("Reach LV " + c.level + " to unlock this one.");
-      me = { ...me, car: c.id }; save(); scene.drive();
+      setRide({ car: c.id }).catch(() => {}); render(); scene.drive();
     };
     grid.appendChild(b);
   });
 }
 
-async function renderBoard() {
-  const all = allPlayers();
-  const rows = Object.entries(all).filter(([, p]) => p.sightings.length)
-    .map(([id, p]) => ({ id, p, best: best(p) })).sort((a, b) => b.best - a.best);
-  const names = await namesFor(rows.map(r => r.id));
+function renderBoard() {
   const board = $("board");
   board.replaceChildren();
-  if (!rows.length) return emptyRow(board, "No one has spotted a 1 yet.");
-  rows.forEach((r, i) => board.appendChild(personRow(i + 1, r.p, names[r.id], "LV " + levelOf(xpOf(r.p)), r.best)));
-}
-
-function updateVerdict() {
-  const v = $("verdict"), plate = $("plate-input").value.trim();
-  if (!plate) { v.textContent = ""; v.className = "verdict"; return; }
-  const ok = plateCounts(plate, me.n);
-  v.textContent = ok ? "COUNTS" : "NOPE";
-  v.className = "verdict " + (ok ? "yes" : "no");
+  if (!world.board.length) return emptyRow(board, "No one has spotted a 1 yet.");
+  world.board.forEach((r, i) => {
+    const row = personRow(i + 1, r, r.xp, r.mine ? r.username + " (you)" : r.username, "LV " + levelOf(r.xp), r.best);
+    board.appendChild(row);
+  });
 }
 
 // ---- Effects ----
@@ -1144,7 +1283,7 @@ function toast(msg) {
   const t = $("toast");
   t.textContent = msg; t.hidden = false;
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { t.hidden = true; }, 2800);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 function burst(el, text) {
   const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, fx = $("fx");
@@ -1177,20 +1316,36 @@ function setPin(lat, lng) {
   updateSave();
 }
 function otherNum() { const n = parseInt($("other-num").value, 10); return n > 0 ? n : null; }
+const sheetNumber = () => sheetMode === "run" ? me.n : otherNum();
+
+// A full plate showing the right number makes the sighting confirmed: full XP.
+function plateState() {
+  const text = $("full-plate").value.trim(), n = sheetNumber();
+  if (!text) return { plate: null, note: "Unconfirmed: just the number." };
+  if (!n) return { plate: null, note: "Enter the number first." };
+  const c = checkPlate(text, n);
+  return c.ok ? { plate: normalisePlate(text), note: sb && online() ? "Checks it's a real plate, then confirms it." : "Confirmed." }
+    : { plate: null, note: c.reason + " Saves as unconfirmed.", bad: true };
+}
 function updateSave() {
-  const numOk = sheetMode === "run" || otherNum();
-  $("save").disabled = !(pin && numOk);
-  $("no-loc").disabled = !numOk;
+  const n = sheetNumber(), st = plateState();
+  const s = { n: n || 1, lat: pin ? 1 : null, place: $("place").value.trim() };
+  const xp = sightingXp({ ...s, confirmed: !!st.plate }, sheetMode === "run");
+  const v = $("plate-verdict");
+  v.textContent = st.note + (n ? ` +${xp} XP` : "");
+  v.className = "verdict " + (st.plate ? "yes" : st.bad ? "no" : "");
+  $("save").disabled = busy || !(pin && n);
+  $("no-loc").disabled = busy || !n;
 }
 function openSheet(kind) {
   sheetMode = kind;
   $("num-field").hidden = kind === "run";
-  $("where-title").textContent = kind === "run" ? "Where was " + me.n + "?" : "Log a number";
-  $("other-num").value = ""; $("place").value = "";
+  $("where-title").textContent = kind === "run" ? "Log " + me.n : "Log a number";
+  $("other-num").value = ""; $("place").value = ""; $("full-plate").value = "";
   updateSave();
   $("where").showModal();
   pickMap.refresh();
-  if (kind === "other") $("other-num").focus();
+  (kind === "other" ? $("other-num") : $("full-plate")).focus();
 }
 
 if (navigator.geolocation) $("locate").hidden = false;
@@ -1203,28 +1358,26 @@ $("locate").addEventListener("click", () => {
 });
 $("spot").addEventListener("click", () => openSheet("run"));
 $("spot-other").addEventListener("click", () => openSheet("other"));
-$("other-num").addEventListener("input", updateSave);
+["other-num", "full-plate", "place"].forEach(id => $(id).addEventListener("input", updateSave));
 $("cancel").addEventListener("click", () => $("where").close());
 
-function logSighting(where) {
+async function logSighting(where) {
   const place = $("place").value.trim();
-  const s = { at: Date.now(), ...where, ...(place ? { place } : {}) };
-  const xp0 = xpOf(me), lvl0 = levelOf(xp0);
-  let msg, from;
-  if (sheetMode === "run") {
-    me = { ...me, n: me.n + 1, sightings: [...me.sightings, { n: me.n, ...s }] };
-    $("plate-input").value = "";
-    msg = "Now find " + me.n + "."; from = $("spot");
-  } else {
-    const n = otherNum();
-    me = { ...me, spots: [...me.spots, { n, ...s }] };
-    msg = n + " is on the map."; from = $("spot-other");
-  }
+  if (place) where = { ...where, place };
+  const n = sheetNumber(), { plate } = plateState();
+  const xp0 = xpOf(me), lvl0 = levelOf(xp0), from = sheetMode === "run" ? $("spot") : $("spot-other");
+  busy = true; updateSave();
+  let vehicle;
+  try { vehicle = await addSighting(sheetMode === "run" ? "run" : "spot", n, where, plate); }
+  catch (e) { busy = false; updateSave(); return; }
+  busy = false;
   $("where").close();
-  save();
+  await refresh();
   scene.drive();
   const gained = xpOf(me) - xp0, lvl = levelOf(xpOf(me));
   burst(from, "+" + gained + " XP");
+  const msg = (vehicle && vehicle.make ? `Confirmed: ${(vehicle.colour || "").toLowerCase()} ${vehicle.make}. ` : plate ? "Confirmed. " : "")
+    + (sheetMode === "run" ? "Now find " + me.n + "." : n + " is on the map.");
   const unlocked = CARS.filter(c => c.level > lvl0 && c.level <= lvl).pop();
   if (unlocked) setTimeout(() => showUnlock(unlocked), 700);
   else toast(lvl > lvl0 ? "LEVEL " + lvl + ". " + msg : msg);
@@ -1235,7 +1388,7 @@ function showUnlock(car) {
   $("unlock-name").textContent = car.name + " unlocked";
   $("unlock").returnValue = "";
   $("unlock").onclose = () => {
-    if ($("unlock").returnValue === "use") { me = { ...me, car: car.id }; save(); scene.drive(); }
+    if ($("unlock").returnValue === "use") { setRide({ car: car.id }).catch(() => {}); render(); scene.drive(); }
   };
   $("unlock").showModal();
 }
@@ -1246,17 +1399,66 @@ $("where-form").addEventListener("submit", e => {
 });
 $("no-loc").addEventListener("click", () => logSighting({}));
 
-$("undo").addEventListener("click", () => {
-  const last = me.sightings[me.sightings.length - 1];
-  if (!last) return;
-  me = { ...me, n: last.n, sightings: me.sightings.slice(0, -1) };
-  save();
-});
+$("undo").addEventListener("click", () => undoLast().then(refresh, () => {}));
 $("reset").addEventListener("click", () => { $("reset-confirm").hidden = false; });
 $("reset-no").addEventListener("click", () => { $("reset-confirm").hidden = true; });
-$("reset-yes").addEventListener("click", () => { me = { ...me, n: 1 }; $("reset-confirm").hidden = true; save(); });
-$("plate-input").addEventListener("input", updateVerdict);
+$("reset-yes").addEventListener("click", () => { $("reset-confirm").hidden = true; startAgain().then(refresh, () => {}); });
 $("find").addEventListener("input", renderMapView);
+$("friend-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("friend-name").value.trim();
+  if (!name) return;
+  call(sb.rpc("request_friend", { p_username: name })).then(r => {
+    $("friend-name").value = "";
+    toast(r === "accepted" ? "You're now friends with " + name + "." : "Asked " + name + ". They'll see you once they accept.");
+    refresh();
+  }, () => {});
+});
+
+// ---- Account ----
+
+function openAccount() {
+  const signedIn = !!account, named = signedIn && !!account.username;
+  $("account-title").textContent = named ? "@" + account.username : signedIn ? "Welcome" : "Sign in";
+  $("signin-form").hidden = signedIn;
+  $("link-sent").hidden = true;
+  $("username-form").hidden = !signedIn || named;
+  $("signed-in").hidden = !named;
+  $("delete-confirm").hidden = true;
+  if (named) $("who").textContent = "Signed in as " + account.email;
+  if (!$("account").open) $("account").showModal();
+}
+$("mode").addEventListener("click", () => sb ? openAccount() : toast("This copy plays on this device only."));
+$("signin-cta-btn").addEventListener("click", openAccount);
+$("account-close").addEventListener("click", () => $("account").close());
+$("signin-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+  if (error) return toast(error.message);
+  $("signin-form").hidden = true;
+  $("link-sent").hidden = false;
+  $("link-sent").textContent = "Check " + email + " and tap the link. You can close this.";
+});
+$("username-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const username = $("username").value.trim();
+  const { error } = await sb.from("profiles").insert({ id: account.id, username, car: me.car, paint: me.paint });
+  if (error) return toast(error.code === "23505" ? "That username is taken." : error.message);
+  account.username = username;
+  $("account").close();
+  toast("Welcome, " + username + ".");
+  await refresh();
+});
+$("sign-out").addEventListener("click", async () => { await sb.auth.signOut(); $("account").close(); });
+$("delete-account").addEventListener("click", () => { $("delete-confirm").hidden = false; });
+$("delete-no").addEventListener("click", () => { $("delete-confirm").hidden = true; });
+$("delete-yes").addEventListener("click", async () => {
+  try { await call(sb.rpc("delete_account")); } catch (e) { return; }
+  await sb.auth.signOut();
+  $("account").close();
+  toast("Your account and sightings are deleted.");
+});
 
 // ---- Tabs ----
 
@@ -1288,7 +1490,12 @@ for (const [id, mine] of [["show-all", false], ["show-mine", true]]) {
 window.addEventListener("resize", () => heatMap.refresh());
 
 loadLocal();
+world = localWorld();
 render();
 scene.start();
-connect();
+if (sb) {
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "SIGNED_OUT") setTimeout(() => onAuth(session), 0);
+  });
+}
 </script>
