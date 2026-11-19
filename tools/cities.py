@@ -1,5 +1,6 @@
 """Make src/towns.json: every city in the UK (official city status), the cities of
-Ireland, and Douglas on the Isle of Man, biggest first, as [name, lat, lng].
+Ireland, and Douglas on the Isle of Man, biggest first, as [name, lat, lng],
+followed by large towns (60,000 people or more) as [name, lat, lng, 1].
 
 Positions and populations come from GeoNames cities1000 (CC BY 4.0,
 https://download.geonames.org/export/dump/cities1000.zip). Each city below has a
@@ -40,11 +41,18 @@ CITIES = [
     ("Waterford", 52.26, -7.11), ("Kilkenny", 52.65, -7.25), ("Douglas", 54.15, -4.48),
 ]
 
+# Large towns: GeoNames entries that are districts or areas rather than towns, and renamed labels.
+NOT_TOWNS = {"High Peak", "Fylde", "Rossendale", "Saint Peters", "Buckley", "Tonypandy", "Rhondda",
+             "Tallaght", "Newtownabbey", "Sale"}  # the last three are suburbs of Dublin, Belfast and Manchester
+NOT_LONDON = {"Watford"}  # inside the London cut-off but its own town
+RENAME = {"Ellesmere Port Town": "Ellesmere Port", "Royal Tunbridge Wells": "Tunbridge Wells"}
+TOWN_MIN = 60000
+
 places = []
 for r in csv.reader(open(sys.argv[1], encoding="utf-8"), delimiter="\t", quoting=csv.QUOTE_NONE):
     if r[8] in ("GB", "IE", "IM") and r[6] == "P":
         names = {r[1].lower(), r[2].lower()} | {n.lower() for n in r[3].split(",")}
-        places.append((names, float(r[4]), float(r[5]), int(r[14] or 0)))
+        places.append((names, float(r[4]), float(r[5]), int(r[14] or 0), r[1], r[7]))
 
 out = []
 for c in CITIES:
@@ -58,5 +66,18 @@ for c in CITIES:
         print("no GeoNames match, using rough position:", label)
         out.append((0, label, lat, lng))
 out.sort(key=lambda t: -t[0])
-json.dump([[n, la, lo] for _, n, la, lo in out], open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
-print(len(out), "cities;", ", ".join(n for _, n, _, _ in out[:15]), "...")
+
+km = lambda a, b, c, d: math.hypot((a - c) * 111, (b - d) * 111 * 0.6)
+towns = []
+for names, lat, lng, pop, name, code in sorted(places, key=lambda p: -p[3]):
+    if pop < TOWN_MIN:
+        break
+    if code == "PPLX" or name in NOT_TOWNS or (km(lat, lng, 51.507, -0.128) < 26 and name not in NOT_LONDON):  # London boroughs
+        continue
+    if any(km(lat, lng, la, lo) < 7 for _, _, la, lo in out + towns):  # part of a city or a town already in
+        continue
+    towns.append((pop, RENAME.get(name, name), round(lat, 3), round(lng, 3)))
+
+data = [[n, la, lo] for _, n, la, lo in out] + [[n, la, lo, 1] for _, n, la, lo in towns]
+json.dump(data, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+print(len(out), "cities and", len(towns), "towns:", ", ".join(n for _, n, _, _ in towns))

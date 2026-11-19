@@ -144,6 +144,8 @@
   .city::before { content: ""; width: 5px; height: 5px; background: var(--text); box-shadow: 0 0 0 1px var(--abyss); }
   .city.l { flex-direction: row-reverse; transform: translate(calc(-100% + 3px), -50%); }
   .city.major { font-size: 19px; color: var(--text); }
+  .city.town { font-size: 15px; color: var(--muted); }
+  .city.town::before { width: 4px; height: 4px; background: var(--soft); }
   .city.major::before { width: 7px; height: 7px; background: var(--plate); }
   .shield { font-size: 14px; padding: 0 3px; line-height: 1.1; border: 1px solid var(--abyss); }
   .shield { transform: translate(-50%, -50%); }
@@ -725,8 +727,9 @@ const scene = (() => {
 
 // ---- Pixel atlas map: drawn small, scaled up crisp, zoom and pan ----
 
-// Cities: every UK city, Ireland's cities and Douglas, biggest first (GeoNames, CC BY 4.0). The first dozen get bigger labels.
-const TOWNS = __TOWNS__.map(([name, la, lo], i) => ({ name, xy: toXY(la, lo), major: i < 12 }));
+// Places to label (GeoNames, CC BY 4.0): every UK city, Ireland's cities and Douglas, biggest first,
+// then large towns. The first dozen cities get bigger labels; towns wait until you zoom in a little.
+const TOWNS = __TOWNS__.map(([name, la, lo, town], i) => ({ name, xy: toXY(la, lo), major: i < 12, town: !!town }));
 // Roads from OS Open Roads (Ordnance Survey, OGL): m motorways, p primary A roads (green signs), a other A roads.
 // Each line is [road number, x,y pairs in tenths of a map unit].
 const ROAD_DATA = __ROADS__;
@@ -858,6 +861,7 @@ function atlas(host, { onTap, heat } = {}) {
     let used = 0;
     for (const t of TOWNS) {
       if (used >= max) break;
+      if (t.town && zoom() < 1.5) continue;
       const x = (t.xy[0] - v.x) * k, y = (t.xy[1] - v.y) * k;
       if (x < 2 || y < 9 || x > r.width - 2 || y > r.height - 9) continue;
       const w = Math.ceil(t.name.length * (t.major ? 8.6 : 7.6)) + 12, h = t.major ? 20 : 17;
@@ -868,7 +872,7 @@ function atlas(host, { onTap, heat } = {}) {
       }
       boxes.push(box);
       const el = pool[used] || (pool[used] = labels.appendChild(document.createElement("div")));
-      el.className = "city" + (left ? " l" : "") + (t.major ? " major" : "");
+      el.className = "city" + (left ? " l" : "") + (t.major ? " major" : "") + (t.town ? " town" : "");
       el.textContent = t.name; el.style.left = x + "px"; el.style.top = y + "px"; el.hidden = false;
       used++;
     }
@@ -1029,7 +1033,7 @@ function render() {
   $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
   $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
   $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
-  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Cities: GeoNames (CC BY 4.0). Roads: contains OS data © Crown copyright and database right 2026.";
+  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Places: GeoNames (CC BY 4.0). Roads: contains OS data © Crown copyright and database right 2026.";
   renderMapView();
   renderGarage();
   renderBoard();

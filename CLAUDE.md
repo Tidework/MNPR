@@ -11,7 +11,7 @@ MNPR (Manual Number Plate Recognition) is a phone-first web game for the number 
 - Edit `src/page.html`, then run `python3 build.py`. That writes `index.html` (the full page) and `preview.html` (for the claude.ai artifact preview). Never edit `index.html` by hand.
 - Data, each made by a script in `tools/` and credited on the map:
   - `src/uk.json`: coastline, `tools/outlines.py`, Natural Earth 1:10m.
-  - `src/towns.json`: cities only (every official UK city, Ireland's cities, Douglas), `tools/cities.py`, positions from GeoNames (CC BY 4.0). Lyle wants cities, not towns.
+  - `src/towns.json`: every official UK city, Ireland's cities and Douglas, then large towns (60,000+ people, e.g. Crawley), `tools/cities.py`, positions from GeoNames (CC BY 4.0). Lyle wants cities and major towns only, not small towns. Towns label from 1.5x zoom.
   - `src/roads.json`: motorways and A roads in Great Britain, `tools/roads.py`, OS Open Roads (OGL: "Contains OS data © Crown copyright and database right"). Motorways show at every zoom, primary A roads from 1.5x, other A roads from 3x; signs use real UK sign colours.
 - Preview artifact: https://claude.ai/artifact/A64fx9Ko2u7jyXYv9pgtgr (publish `preview.html` to that URL).
 
