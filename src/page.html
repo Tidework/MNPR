@@ -753,7 +753,7 @@ const ROAD_PATHS = ROADS.map(([, kind, pts]) => {
   pts.forEach(([la, lo], i) => { const [x, y] = toXY(la, lo); i ? p.lineTo(x, y) : p.moveTo(x, y); });
   return [kind, p];
 });
-const PX = 2; // screen pixels per map pixel
+const PX = 1.5; // screen pixels per map pixel
 
 function atlas(host, { onTap, heat } = {}) {
   const canvas = document.createElement("canvas"); host.appendChild(canvas);
@@ -788,13 +788,13 @@ function atlas(host, { onTap, heat } = {}) {
     g.fillStyle = MAPCOL.sea; g.fillRect(0, 0, cw, ch);
     g.setTransform(s, 0, 0, s, -v.x * s, -v.y * s);
     g.lineJoin = g.lineCap = "round";
-    [[9, MAPCOL.r1], [5, MAPCOL.r2]].forEach(([w, col]) => {
+    [[10, MAPCOL.r1], [5, MAPCOL.r2]].forEach(([w, col]) => {
       g.strokeStyle = col; g.lineWidth = w / s; LAND.forEach(([, p]) => g.stroke(p));
     });
     LAND.forEach(([code, p]) => { g.fillStyle = code === "GBR" ? MAPCOL.land : MAPCOL.other; g.fill(p); });
-    g.strokeStyle = MAPCOL.coast; g.lineWidth = 1 / s; LAND.forEach(([, p]) => g.stroke(p));
+    g.strokeStyle = MAPCOL.coast; g.lineWidth = 1.4 / s; LAND.forEach(([, p]) => g.stroke(p));
     ROAD_PATHS.forEach(([kind, p]) => {
-      g.strokeStyle = kind === "m" ? MAPCOL.mway : MAPCOL.aroad; g.lineWidth = (kind === "m" ? 1.3 : 1) / s; g.stroke(p);
+      g.strokeStyle = kind === "m" ? MAPCOL.mway : MAPCOL.aroad; g.lineWidth = (kind === "m" ? 1.6 : 1.2) / s; g.stroke(p);
     });
     g.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -812,7 +812,7 @@ function atlas(host, { onTap, heat } = {}) {
       const pts = heat();
       if (pts.length) {
         const hc = document.createElement("canvas"); hc.width = cw; hc.height = ch;
-        const hg = hc.getContext("2d"), rad = Math.min(16, Math.max(4, 16 * s));
+        const hg = hc.getContext("2d"), rad = Math.min(22, Math.max(6, 22 * s));
         pts.forEach(([mx, my]) => {
           const x = (mx - v.x) * s, y = (my - v.y) * s;
           if (x < -rad || y < -rad || x > cw + rad || y > ch + rad) return;
