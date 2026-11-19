@@ -9,7 +9,10 @@ MNPR (Manual Number Plate Recognition) is a phone-first web game for the number 
 
 ## Code
 - Edit `src/page.html`, then run `python3 build.py`. That writes `index.html` (the full page) and `preview.html` (for the claude.ai artifact preview). Never edit `index.html` by hand.
-- Data: `src/uk.json` (coastline, made by `tools/outlines.py` from Natural Earth 1:10m) and `src/towns.json` (towns, made by `tools/towns.py` from GeoNames cities1000, CC BY 4.0, credited on the map).
+- Data, each made by a script in `tools/` and credited on the map:
+  - `src/uk.json`: coastline, `tools/outlines.py`, Natural Earth 1:10m.
+  - `src/towns.json`: cities only (every official UK city, Ireland's cities, Douglas), `tools/cities.py`, positions from GeoNames (CC BY 4.0). Lyle wants cities, not towns.
+  - `src/roads.json`: motorways and A roads in Great Britain, `tools/roads.py`, OS Open Roads (OGL: "Contains OS data © Crown copyright and database right"). Motorways show at every zoom, primary A roads from 1.5x, other A roads from 3x; signs use real UK sign colours.
 - Preview artifact: https://claude.ai/artifact/A64fx9Ko2u7jyXYv9pgtgr (publish `preview.html` to that URL).
 
 ## Design

@@ -146,8 +146,10 @@
   .city.major { font-size: 19px; color: var(--text); }
   .city.major::before { width: 7px; height: 7px; background: var(--plate); }
   .shield { font-size: 14px; padding: 0 3px; line-height: 1.1; border: 1px solid var(--abyss); }
-  .shield.m { background: var(--pink); color: var(--abyss); }
-  .shield.a { background: var(--soft); color: var(--abyss); }
+  .shield { transform: translate(-50%, -50%); }
+  .shield.m { background: #2B4BC4; color: #fff; border-color: #fff; }
+  .shield.p { background: #1E7A46; color: #FFD23F; border-color: #fff; }
+  .shield.a { background: #F2F4F8; color: #050A14; }
   .friend { display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -88%); animation: bob 0.8s steps(2) infinite; }
   .friend .chip { font-size: 17px; margin-bottom: 2px; }
   .friend span { font-size: 15px; color: var(--text); text-shadow: 1px 1px 0 var(--abyss), -1px -1px 0 var(--abyss); }
@@ -723,44 +725,43 @@ const scene = (() => {
 
 // ---- Pixel atlas map: drawn small, scaled up crisp, zoom and pan ----
 
-// Towns and villages, most important first (GeoNames, CC BY 4.0). The first dozen get bigger labels.
+// Cities: every UK city, Ireland's cities and Douglas, biggest first (GeoNames, CC BY 4.0). The first dozen get bigger labels.
 const TOWNS = __TOWNS__.map(([name, la, lo], i) => ({ name, xy: toXY(la, lo), major: i < 12 }));
-const ring = (lat, lng, rl, rg, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
-  const a = i / n * Math.PI * 2; return [lat + Math.sin(a) * rl, lng + Math.cos(a) * rg];
-});
-// Road lines are drawn through key towns, not surveyed.
-const ROADS = [
-  ["M1", "m", [[51.57,-0.24],[51.88,-0.42],[52.05,-0.72],[52.25,-1.0],[52.62,-1.2],[52.93,-1.27],[53.38,-1.38],[53.75,-1.45]]],
-  ["M6", "m", [[52.40,-1.25],[52.45,-1.45],[52.53,-1.88],[52.75,-2.05],[53.0,-2.25],[53.4,-2.55],[53.8,-2.7],[54.05,-2.78],[54.4,-2.62],[54.65,-2.75],[54.9,-2.95]]],
-  ["M74", "m", [[54.9,-2.95],[55.05,-3.15],[55.3,-3.45],[55.6,-3.8],[55.83,-4.1]]],
-  ["M8", "m", [[55.86,-4.25],[55.9,-3.8],[55.93,-3.3]]],
-  ["M5", "m", [[52.5,-2.0],[52.2,-2.15],[51.85,-2.2],[51.55,-2.6],[51.3,-2.95],[51.0,-3.08],[50.73,-3.47]]],
-  ["M4", "m", [[51.49,-0.3],[51.43,-0.98],[51.5,-1.4],[51.53,-1.75],[51.53,-2.55],[51.58,-3.0],[51.53,-3.2],[51.6,-3.65],[51.65,-3.9]]],
-  ["M62", "m", [[53.4,-2.9],[53.45,-2.6],[53.48,-2.3],[53.65,-1.95],[53.73,-1.6],[53.72,-1.0],[53.75,-0.4]]],
-  ["M40", "m", [[51.55,-0.45],[51.65,-0.8],[51.75,-1.17],[52.0,-1.3],[52.25,-1.55],[52.42,-1.78]]],
-  ["M3", "m", [[51.4,-0.45],[51.3,-0.85],[51.1,-1.3],[50.92,-1.4]]],
-  ["M11", "m", [[51.6,0.05],[51.9,0.2],[52.2,0.12]]],
-  ["M25", "m", ring(51.5, -0.12, 0.23, 0.37)],
-  ["M90", "m", [[56.0,-3.4],[56.2,-3.42],[56.4,-3.45]]],
-  ["M80", "m", [[55.88,-4.15],[56.0,-3.95],[56.12,-3.93]]],
-  ["M1", "m", [[54.6,-5.93],[54.45,-6.35],[54.4,-6.7]]],
-  ["A1", "a", [[51.65,-0.2],[52.0,-0.25],[52.57,-0.27],[53.0,-0.75],[53.4,-1.05],[53.75,-1.4],[54.1,-1.45],[54.5,-1.6],[54.97,-1.62],[55.4,-1.7],[55.77,-2.0],[55.95,-2.6],[55.95,-3.1]]],
-  ["A9", "a", [[56.12,-3.93],[56.4,-3.45],[56.7,-3.73],[57.2,-3.83],[57.48,-4.22]]],
-  ["A90", "a", [[56.4,-3.45],[56.46,-2.97],[56.75,-2.45],[57.15,-2.1]]],
-  ["A30", "a", [[50.73,-3.47],[50.7,-3.9],[50.64,-4.2],[50.47,-4.72],[50.3,-5.05],[50.23,-5.23],[50.12,-5.53]]],
-  ["A11", "a", [[52.2,0.2],[52.4,0.6],[52.63,1.29]]],
-  ["A55", "a", [[53.2,-2.9],[53.25,-3.5],[53.28,-3.85],[53.23,-4.15],[53.3,-4.6]]],
-  ["A38", "a", [[50.73,-3.47],[50.5,-3.75],[50.4,-4.14]]]
-];
-const MAPCOL = { sea: "#0B1528", r1: "#0F2142", r2: "#163160", coast: "#4DE3FF", land: "#1D3557", other: "#16294A", mway: "#FF5D8F", aroad: "#A8BAD2" };
+// Roads from OS Open Roads (Ordnance Survey, OGL): m motorways, p primary A roads (green signs), a other A roads.
+// Each line is [road number, x,y pairs in tenths of a map unit].
+const ROAD_DATA = __ROADS__;
+// Northern Ireland is outside OS Open Roads, so its two motorways are sketched through the towns they join.
+ROAD_DATA.m.push(...[["M1", [[54.6, -5.93], [54.45, -6.35], [54.4, -6.7]]], ["M2", [[54.6, -5.93], [54.72, -6.22], [54.86, -6.28]]]]
+  .map(([num, pts]) => [num, pts.flatMap(([la, lo]) => toXY(la, lo).map(v => Math.round(v * 10)))]));
+const MAPCOL = { sea: "#0B1528", r1: "#0F2142", r2: "#163160", coast: "#4DE3FF", land: "#1D3557", other: "#16294A", mway: "#FF5D8F", aroad: "#A8BAD2", minor: "#5872A0" };
 const SNAP = Object.values(MAPCOL).map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
 const HEAT = ["#FFD23F", "#FF9F43", "#FF5D8F", "#FFF2F6"].map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
 const LAND = Object.entries(PATHS).map(([code, d]) => [code, new Path2D(d)]);
-const ROAD_PATHS = ROADS.map(([, kind, pts]) => {
+// Each kind of road appears from a zoom level, and its number signs from a deeper one.
+const ROAD_KINDS = {
+  a: { col: MAPCOL.minor, width: 1, zoom: 3, signZoom: 5 },
+  p: { col: MAPCOL.aroad, width: 1.2, zoom: 1.5, signZoom: 2.6 },
+  m: { col: MAPCOL.mway, width: 1.6, zoom: 1, signZoom: 1.6 }
+};
+const ROAD_PATHS = {}, SIGNS = [], total = {};
+const SPACING = { m: 12, p: 12, a: 10 }; // map units between places a sign may go
+for (const [kind, lines] of Object.entries(ROAD_DATA)) {
   const p = new Path2D();
-  pts.forEach(([la, lo], i) => { const [x, y] = toXY(la, lo); i ? p.lineTo(x, y) : p.moveTo(x, y); });
-  return [kind, p];
-});
+  for (const [num, flat] of lines) {
+    let len = 0, next = SPACING[kind] / 2;
+    for (let i = 0; i < flat.length; i += 2) {
+      const x = flat[i] / 10, y = flat[i + 1] / 10;
+      if (!i) { p.moveTo(x, y); continue; }
+      p.lineTo(x, y);
+      len += Math.hypot(x - flat[i - 2] / 10, y - flat[i - 1] / 10);
+      if (num && len >= next) { SIGNS.push({ kind, num, xy: [x, y] }); next += SPACING[kind]; }
+    }
+    total[num] = (total[num] || 0) + len;
+  }
+  ROAD_PATHS[kind] = p;
+}
+// Motorways first, then the longest roads.
+SIGNS.sort((a, b) => "mpa".indexOf(a.kind) - "mpa".indexOf(b.kind) || total[b.num] - total[a.num]);
 const PX = 1.5; // screen pixels per map pixel
 
 function atlas(host, { onTap, heat } = {}) {
@@ -775,15 +776,6 @@ function atlas(host, { onTap, heat } = {}) {
   host.parentElement.appendChild(zoomBox);
   const labels = document.createElement("div"); labels.className = "overlay"; host.insertBefore(labels, overlay);
 
-  const fixed = [];
-  const seen = new Set();
-  ROADS.forEach(([ref, kind, pts]) => {
-    if (ref === "M25" || seen.has(ref + pts[0])) return; seen.add(ref + pts[0]);
-    const d = document.createElement("div"); d.className = "shield " + kind; d.textContent = ref;
-    const mid = pts[Math.floor(pts.length / 2)];
-    fixed.push({ el: d, xy: toXY(mid[0], mid[1]), minZoom: kind === "m" ? 1.6 : 2 });
-  });
-  overlay.append(...fixed.map(f => f.el));
   let marks = [];
   let v = { x: 0, y: 0, w: W, h: H };
   const zoom = () => W / v.w;
@@ -802,9 +794,10 @@ function atlas(host, { onTap, heat } = {}) {
     });
     LAND.forEach(([code, p]) => { g.fillStyle = code === "GBR" ? MAPCOL.land : MAPCOL.other; g.fill(p); });
     g.strokeStyle = MAPCOL.coast; g.lineWidth = 1.4 / s; LAND.forEach(([, p]) => g.stroke(p));
-    ROAD_PATHS.forEach(([kind, p]) => {
-      g.strokeStyle = kind === "m" ? MAPCOL.mway : MAPCOL.aroad; g.lineWidth = (kind === "m" ? 1.6 : 1.2) / s; g.stroke(p);
-    });
+    for (const [kind, k] of Object.entries(ROAD_KINDS)) {
+      if (zoom() < k.zoom) continue;
+      g.strokeStyle = k.col; g.lineWidth = k.width / s; g.stroke(ROAD_PATHS[kind]);
+    }
     g.setTransform(1, 0, 0, 1, 0, 0);
 
     // Snap every pixel to the palette so edges stay hard, then lay the heat on top in four steps.
@@ -848,15 +841,15 @@ function atlas(host, { onTap, heat } = {}) {
     if (show) { item.el.style.left = px * 100 + "%"; item.el.style.top = py * 100 + "%"; }
   }
   let queued = false;
-  // Town names: biggest first, each kept only if it fits without overlapping one already placed.
-  // Zooming in frees space, so smaller towns and villages appear.
-  const pool = [];
+  // City names, then road signs: biggest first, each kept only if it fits without overlapping
+  // anything already placed. Zooming in frees space, so more appear.
+  const pool = [], signPool = [];
   function labelTowns() {
     const r = host.getBoundingClientRect();
     if (!r.width) return;
     const k = r.width / v.w, max = Math.min(90, Math.round(14 * Math.pow(zoom(), 0.85)));
     const boxes = [[r.width - 52, 0, r.width, 132]]; // keep clear of the zoom buttons
-    [...fixed, ...marks].forEach(m => {
+    marks.forEach(m => {
       if (m.el.hidden) return;
       const b = m.el.getBoundingClientRect();
       if (b.width) boxes.push([b.left - r.left - 2, b.top - r.top - 2, b.right - r.left + 2, b.bottom - r.top + 2]);
@@ -880,11 +873,30 @@ function atlas(host, { onTap, heat } = {}) {
       used++;
     }
     for (let i = used; i < pool.length; i++) pool[i].hidden = true;
+
+    let signs = 0;
+    const z = zoom(), maxSigns = Math.min(40, Math.round(6 * z)), shown = {};
+    for (const sg of SIGNS) {
+      if (signs >= maxSigns) break;
+      if (z < ROAD_KINDS[sg.kind].signZoom) continue;
+      const x = (sg.xy[0] - v.x) * k, y = (sg.xy[1] - v.y) * k;
+      if (x < 16 || y < 10 || x > r.width - 16 || y > r.height - 10) continue;
+      const w = sg.num.length * 8 + 10, box = [x - w / 2, y - 9, x + w / 2, y + 9];
+      // Repeat a road's number only when the last one is well away on screen.
+      if (hits(box) || (shown[sg.num] || []).some(([px, py]) => Math.hypot(px - x, py - y) < 140)) continue;
+      boxes.push(box);
+      (shown[sg.num] = shown[sg.num] || []).push([x, y]);
+      const el = signPool[signs] || (signPool[signs] = labels.appendChild(document.createElement("div")));
+      el.className = "shield " + sg.kind; el.textContent = sg.num;
+      el.style.left = x + "px"; el.style.top = y + "px"; el.hidden = false;
+      signs++;
+    }
+    for (let i = signs; i < signPool.length; i++) signPool[i].hidden = true;
   }
   function apply() {
     v.w = Math.min(W, Math.max(W / 32, v.w)); v.h = v.w * H / W;
     v.x = Math.min(W - v.w, Math.max(0, v.x)); v.y = Math.min(H - v.h, Math.max(0, v.y));
-    fixed.forEach(place); marks.forEach(place); labelTowns();
+    marks.forEach(place); labelTowns();
     if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; draw(); }); }
   }
   function zoomAt(f, mx, my) {
@@ -1017,7 +1029,7 @@ function render() {
   $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
   $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
   $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
-  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Towns: GeoNames (CC BY 4.0).";
+  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved. Map: Natural Earth. Cities: GeoNames (CC BY 4.0). Roads: contains OS data © Crown copyright and database right 2026.";
   renderMapView();
   renderGarage();
   renderBoard();

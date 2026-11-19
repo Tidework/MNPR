@@ -23,7 +23,7 @@ The look is 16-bit pixel art: a sky-and-road scene with your car, ten unlockable
 
 Privacy: plates are never saved. Pins are exact (about 10 m) and visible to everyone with access; friends' positions are shown to about 1 km.
 
-Road lines on the map are a stylised sketch through the main towns, not surveyed routes. Town names (over 5,000, appearing as you zoom in) come from [GeoNames](https://www.geonames.org/) (CC BY 4.0).
+City positions come from [GeoNames](https://www.geonames.org/) (CC BY 4.0). Motorways and A roads come from OS Open Roads: contains OS data © Crown copyright and database right 2026 (Open Government Licence); they appear as you zoom in, with UK-style road number signs.
 
 Design checks use [Impeccable](https://github.com/pbakaus/impeccable) (Apache 2.0), kept in `.claude/skills/impeccable`.
 

@@ -1,5 +1,5 @@
 """Build index.html from src/page.html, the map outlines in src/uk.json
-and the town list in src/towns.json.
+the city list in src/towns.json and the roads in src/roads.json.
 
 Run: python3 build.py
 Writes index.html (the full page) and preview.html (the same page without
@@ -11,7 +11,8 @@ root = Path(__file__).parent
 page = (root / "src" / "page.html").read_text()
 paths = (root / "src" / "uk.json").read_text().strip()
 towns = (root / "src" / "towns.json").read_text(encoding="utf-8").strip()
-body = page.replace("__PATHS__", paths).replace("__TOWNS__", towns)
+roads = (root / "src" / "roads.json").read_text().strip()
+body = page.replace("__PATHS__", paths).replace("__TOWNS__", towns).replace("__ROADS__", roads)
 
 head, rest = body.split("<!-- page -->", 1)
 full = (
