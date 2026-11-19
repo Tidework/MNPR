@@ -13,11 +13,12 @@ checker are deployed, `PLATE_PEPPER` is set, and `src/config.json` holds the pub
 
 ## 2. Sign-in emails
 
-In the Supabase dashboard for `mnpr`: **Authentication → URL Configuration**:
-- **Site URL**: the website address from step 4 (for example `https://<github-name>.github.io/MNPR/`).
-- **Redirect URLs**: add the same address.
-
-Supabase's free email sender only manages a few sign-in emails an hour. That's fine for testing with friends. Before a wider launch, add your own email sender (for example Resend) under **Authentication → Emails → SMTP**.
+- Site URL and redirect URLs point at `https://tidework.github.io/MNPR/` (set 19 Nov 2026 through the Management API).
+- Supabase's built-in email sender allows only 2 sign-in emails an hour. Before friends join, add a Resend
+  sender: a Resend account, a domain verified in Resend, then in Supabase **Authentication → Emails → SMTP
+  Settings**: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (entered
+  there by Lyle, never in chat or this repo), sender e.g. `MNPR <play@yourdomain>`. Then raise the email
+  rate limit under **Authentication → Rate Limits**.
 
 ## 3. The DVLA plate check
 
