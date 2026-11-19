@@ -13,11 +13,11 @@ checker are deployed, `PLATE_PEPPER` is set, and `src/config.json` holds the pub
 
 ## 2. Sign-in emails
 
-- Site URL and redirect URLs point at `https://tidework.github.io/MNPR/` (set 19 Nov 2026 through the Management API).
+- Site URL: `https://mnpr.lyleswandesign.co.uk/`; redirect URLs allow that and `https://tidework.github.io/MNPR/` (set 19 Nov 2026 through the Management API).
 - Supabase's built-in email sender allows only 2 sign-in emails an hour. Before friends join, add a Resend
-  sender: a Resend account, a domain verified in Resend, then in Supabase **Authentication → Emails → SMTP
+  sender: a Resend account, the domain `mnpr.lyleswandesign.co.uk` verified in Resend (its DNS records added in Cloudflare, DNS only), then in Supabase **Authentication → Emails → SMTP
   Settings**: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (entered
-  there by Lyle, never in chat or this repo), sender e.g. `MNPR <play@yourdomain>`. Then raise the email
+  there by Lyle, never in chat or this repo), sender `MNPR <play@mnpr.lyleswandesign.co.uk>`. Then raise the email
   rate limit under **Authentication → Rate Limits**.
 
 ## 3. The DVLA plate check
@@ -34,3 +34,4 @@ Until then, confirmed plates are checked for a valid UK format showing the right
 1. On GitHub, open the MNPR repository → **Settings → General → Danger Zone → Change visibility → Public**. (There are no secrets in the code.)
 2. **Settings → Pages**: Source **Deploy from a branch**, Branch **main**, folder **/ (root)**, Save.
 3. After a minute the site is live at the address shown there. Every push to `main` updates it.
+4. Web address: in Cloudflare DNS for `lyleswandesign.co.uk`, add a CNAME record `mnpr` → `tidework.github.io`, proxy **off** (grey cloud). The `CNAME` file in this repo tells GitHub to serve `https://mnpr.lyleswandesign.co.uk/`. In **Settings → Pages**, tick **Enforce HTTPS** once it's offered.
