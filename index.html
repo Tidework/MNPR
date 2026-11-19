@@ -51,13 +51,15 @@
 
   /* ---- Scene ---- */
   .scene { position: relative; margin-inline: calc(-1 * max(12px, env(safe-area-inset-left, 0px))); }
-  .scene canvas { display: block; width: 100%; aspect-ratio: 128 / 60; image-rendering: pixelated; }
+  .scene canvas { display: block; width: 100%; aspect-ratio: 160 / 75; image-rendering: pixelated; }
   .scanlines { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px); }
-  .hud { position: absolute; inset: 10px 14px auto 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .hud { position: absolute; inset: 10px 14px auto 14px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 6px 10px; }
   .logo { position: relative; margin: 0; font: 400 52px/0.9 var(--font); letter-spacing: 0.08em; color: #fff; text-shadow: -3px 0 var(--pink), 3px 0 var(--cyan); }
   .logo::after { content: attr(data-text); position: absolute; left: 0; top: 0; color: transparent; text-shadow: -3px 0 var(--pink); clip-path: inset(40% 0 35% 0); animation: glitch 4s steps(1) infinite; }
   @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translateX(4px); } 95% { transform: translateX(-3px); } 97% { transform: translateX(2px); } }
-  .mode { font-size: 16px; letter-spacing: 0.18em; color: var(--abyss); background: rgb(232 241 255 / 0.75); padding: 2px 8px; border: 2px solid var(--abyss); }
+  .tagline { position: relative; flex-basis: 100%; font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: -1px 0 var(--pink), 1px 0 var(--cyan), 0 0 6px rgb(5 10 20 / 0.5); animation: flicker 5s steps(1) infinite; }
+  @keyframes flicker { 0%, 40%, 44%, 100% { opacity: 1; transform: none; } 41% { opacity: 0.4; transform: translateX(2px); } 43% { opacity: 0.8; transform: translateX(-1px); } }
+  .mode { flex: none; font-size: 16px; letter-spacing: 0.18em; color: var(--abyss); background: rgb(232 241 255 / 0.75); padding: 2px 8px; border: 2px solid var(--abyss); }
 
   /* ---- Frames, buttons, text ---- */
   .frame { background: var(--panel); border: 3px solid var(--cyan); box-shadow: inset 0 0 0 3px var(--abyss), 0 0 14px rgb(77 227 255 / 0.25); padding: 14px; }
@@ -222,11 +224,12 @@
 
 <div class="app">
   <header class="scene">
-    <canvas id="scene" width="128" height="60" aria-label="Your car on the road"></canvas>
+    <canvas id="scene" width="160" height="75" aria-label="Your car on the road"></canvas>
     <div class="scanlines"></div>
     <div class="hud">
       <h1 class="logo" data-text="MNPR">MNPR</h1>
       <span class="mode" id="mode">THIS DEVICE</span>
+      <div class="tagline">Manual Number Plate Recognition</div>
     </div>
   </header>
 
@@ -638,14 +641,14 @@ async function namesFor(ids) {
   return out;
 }
 
-// ---- The scene: sky, hills, road and your car, drawn at 128 × 60 pixels ----
+// ---- The scene: sky, hills, road and your car, drawn at 160 × 75 pixels ----
 
 const scene = (() => {
   const c = $("scene"), g = c.getContext("2d");
-  const SW = 128, SH = 60;
-  const clouds = [{ x: 10, y: 6, v: 0.06 }, { x: 70, y: 16, v: 0.1 }, { x: 108, y: 3, v: 0.04 }];
+  const SW = 160, HZ = 52; // width, horizon
+  const clouds = [{ x: 12, y: 8, v: 0.06 }, { x: 88, y: 21, v: 0.1 }, { x: 134, y: 4, v: 0.04 }, { x: 52, y: 30, v: 0.08 }];
   const cloud = spriteCanvas(CLOUD, PAINTS.white);
-  let carImg = null, t = 0, carX = 50, drive = null, puffs = [];
+  let carImg = null, t = 0, carX = 64, drive = null, puffs = [];
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function circle(cx, cy, r, col) {
@@ -653,31 +656,33 @@ const scene = (() => {
     for (let y = -r; y <= r; y++) { const w = Math.round(Math.sqrt(r * r - y * y)); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); }
   }
   function draw() {
-    [[0, "#4FA8E8"], [10, "#66B6EE"], [19, "#7EC4F2"], [26, "#98D2F6"], [32, "#B6E0F9"], [36, "#D4EEFC"]].forEach(([y, col], i, a) => {
-      g.fillStyle = col; g.fillRect(0, y, SW, (a[i + 1] ? a[i + 1][0] : 42) - y);
+    [[0, "#4FA8E8"], [12, "#66B6EE"], [23, "#7EC4F2"], [32, "#98D2F6"], [40, "#B6E0F9"], [46, "#D4EEFC"]].forEach(([y, col], i, a) => {
+      g.fillStyle = col; g.fillRect(0, y, SW, (a[i + 1] ? a[i + 1][0] : HZ) - y);
     });
-    circle(102, 14, 8, "#FFF3B0"); circle(102, 14, 6, "#FFD866");
+    circle(128, 18, 10, "#FFF3B0"); circle(128, 18, 8, "#FFE58A"); circle(128, 18, 6, "#FFD866");
     clouds.forEach(k => g.drawImage(cloud, Math.round(k.x), k.y));
     for (let x = 0; x < SW; x++) {
       const u = x + t * 0.15;
-      const hFar = Math.round(35 + 2 * Math.sin(u / 11) + Math.sin(u / 5));
-      g.fillStyle = "#5C86B8"; g.fillRect(x, hFar, 1, 42 - hFar);
+      const hFar = Math.round(HZ - 9 + 2.5 * Math.sin(u / 13) + 1.2 * Math.sin(u / 6));
+      g.fillStyle = "#5C86B8"; g.fillRect(x, hFar, 1, HZ - hFar);
+      g.fillStyle = "#6E97C6"; g.fillRect(x, hFar, 1, 1);
       const v = x + t * 0.4;
-      const hNear = Math.round(39 + 1.5 * Math.sin(v / 7));
-      g.fillStyle = "#2E5A73"; g.fillRect(x, hNear, 1, 42 - hNear);
+      const hNear = Math.round(HZ - 4 + 2 * Math.sin(v / 9));
+      g.fillStyle = "#2E5A73"; g.fillRect(x, hNear, 1, HZ - hNear);
     }
-    g.fillStyle = "#A8BAD2"; g.fillRect(0, 42, SW, 1);
-    g.fillStyle = "#1B2A44"; g.fillRect(0, 43, SW, 10);
+    g.fillStyle = "#A8BAD2"; g.fillRect(0, HZ, SW, 1);
+    g.fillStyle = "#1B2A44"; g.fillRect(0, HZ + 1, SW, 13);
+    g.fillStyle = "#22344F"; g.fillRect(0, HZ + 1, SW, 2);
     g.fillStyle = "#E8F1FF";
-    const off = Math.floor(t * 1.5) % 10;
-    for (let x = -off; x < SW; x += 10) g.fillRect(x, 48, 5, 1);
-    g.fillStyle = "#4DE3FF"; g.fillRect(0, 53, SW, 1);
-    g.fillStyle = "#0D1830"; g.fillRect(0, 54, SW, 3);
-    g.fillStyle = "#0A1426"; g.fillRect(0, 57, SW, 3);
+    const off = Math.floor(t * 1.8) % 12;
+    for (let x = -off; x < SW; x += 12) g.fillRect(x, HZ + 7, 6, 1);
+    g.fillStyle = "#4DE3FF"; g.fillRect(0, HZ + 14, SW, 1);
+    g.fillStyle = "#0D1830"; g.fillRect(0, HZ + 15, SW, 4);
+    g.fillStyle = "#0A1426"; g.fillRect(0, HZ + 19, SW, 4);
     puffs.forEach(p => { g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); });
     if (carImg) {
       const bob = (Math.floor(t / 3) % 2) && !drive ? 1 : 0;
-      g.drawImage(carImg, Math.round(carX), 51 - carImg.height - bob);
+      g.drawImage(carImg, Math.round(carX), HZ + 11 - carImg.height - bob);
     }
   }
   function step() {
@@ -685,11 +690,11 @@ const scene = (() => {
     clouds.forEach(k => { k.x -= k.v; if (k.x < -18) k.x = SW + 2; });
     if (drive) {
       drive.f++;
-      if (drive.f < 18) carX += drive.f * 0.5;
-      else if (drive.f === 18) carX = -40;
-      else { carX += Math.max(0.5, (50 - carX) * 0.15); if (carX >= 49.5) { carX = 50; drive = null; } }
+      if (drive.f < 20) carX += drive.f * 0.55;
+      else if (drive.f === 20) carX = -40;
+      else { carX += Math.max(0.5, (64 - carX) * 0.15); if (carX >= 63.5) { carX = 64; drive = null; } }
     }
-    if (t % 4 === 0 && carImg) puffs.push({ x: carX - 2, y: 48 - (t % 8 ? 0 : 1), c: t % 8 ? "#A8BAD2" : "#7D93B8", life: 10 });
+    if (t % 4 === 0 && carImg) puffs.push({ x: carX - 2, y: HZ + 8 - (t % 8 ? 0 : 1), c: t % 8 ? "#A8BAD2" : "#7D93B8", life: 12 });
     puffs = puffs.filter(p => (p.x -= 0.8, p.y -= 0.15, --p.life > 0));
     draw();
   }
@@ -755,7 +760,7 @@ const ROAD_PATHS = ROADS.map(([, kind, pts]) => {
   pts.forEach(([la, lo], i) => { const [x, y] = toXY(la, lo); i ? p.lineTo(x, y) : p.moveTo(x, y); });
   return [kind, p];
 });
-const PX = 3; // screen pixels per map pixel
+const PX = 2; // screen pixels per map pixel
 
 function atlas(host, { onTap, heat } = {}) {
   const canvas = document.createElement("canvas"); host.appendChild(canvas);
