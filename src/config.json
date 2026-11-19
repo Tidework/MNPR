@@ -1,4 +1,4 @@
 {
-  "supabaseUrl": "",
-  "supabaseKey": ""
+  "supabaseUrl": "https://pkzkkawhfdbvqdzhymzy.supabase.co",
+  "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBremtrYXdoZmRidnFkemh5bXp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwOTgyMTEsImV4cCI6MjExMDY3NDIxMX0.-GXYNOqcaLLxqYaJWPe1NWqHHKGblObgi7g9-brxB-8"
 }

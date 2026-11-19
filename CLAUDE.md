@@ -18,7 +18,8 @@ MNPR (Manual Number Plate Recognition) is a phone-first web game for the number 
 - Online version: GitHub Pages (`index.html`) with Supabase (`src/config.json` holds the public URL and key; empty means device-only). See `SETUP.md`.
   - Database: `supabase/migrations/`. Test every change on plain Postgres with `supabase/tests/run.sh` before applying it. XP rules live in both `sighting_xp()` and `sightingXp()` in `src/page.html`: change them together.
   - Plate checker: `supabase/functions/confirm-plate/` (DVLA lookup when the `DVLA_API_KEY` secret is set). `plates.js` there is the single source of the UK plate rules; `build.py` inlines it into the page. Test with `node supabase/tests/plates_test.mjs`.
-  - MNPR is separate from Tidework: its own Supabase account, never the Tidework Club project.
+  - MNPR is separate from Tidework: its own Supabase account, never the Tidework Club project. The claude.ai Supabase connector points at Tidework, so don't use it here.
+  - Live project `pkzkkawhfdbvqdzhymzy`. Reach it through the Supabase Management API (`https://api.supabase.com/v1/projects/pkzkkawhfdbvqdzhymzy/...`): the access token is a network secret on the MNPR environment, so plain curl works; Node needs `NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt`. Apply migrations with `POST .../database/migrations` and keep local file names matching the versions it records. Deploy the function with `POST .../functions/deploy?slug=confirm-plate` (index.ts and plates.js). After changes run `supabase/tests/live_test.mjs`.
 
 ## Design
 - Look: 16-bit pixel art after Krillion (krillion.io): pixel sky and road scene, dark navy deck, cyan double-framed panels, pink accent, yellow number plate, VT323 font, CRT scanlines. Cars have eyes. Keep it fun and animated.

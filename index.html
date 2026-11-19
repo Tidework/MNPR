@@ -620,7 +620,7 @@ function spriteURL(rows, paint, scale = 4) {
 // With CONFIG it signs in with Supabase: your run, car and sightings live in the database, and the map,
 // leaderboard and friends come from everyone.
 
-const CONFIG = {"supabaseUrl": "", "supabaseKey": ""};
+const CONFIG = {"supabaseUrl": "https://pkzkkawhfdbvqdzhymzy.supabase.co", "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBremtrYXdoZmRidnFkemh5bXp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwOTgyMTEsImV4cCI6MjExMDY3NDIxMX0.-GXYNOqcaLLxqYaJWPe1NWqHHKGblObgi7g9-brxB-8"};
 const KEY = "mnpr.v1";
 const $ = id => document.getElementById(id);
 const sb = CONFIG.supabaseUrl && window.supabase ? window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey) : null;

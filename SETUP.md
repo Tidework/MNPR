@@ -3,16 +3,13 @@
 MNPR runs as a website (GitHub Pages) with accounts and a shared map (Supabase).
 Most of it is built. These are the steps only Lyle can do, in order.
 
-## 1. A Supabase account just for MNPR
+## 1. A Supabase account just for MNPR (done, 19 Nov 2026)
 
-1. Go to https://supabase.com and sign up with an email that isn't your Tidework one (or, signed in, make a new organisation called MNPR). Pick the **Free** plan.
-2. Create a project called `mnpr`. Region: **London (eu-west-2)**. Save the database password somewhere safe (you won't need to give it to Claude).
-3. In claude.ai, go to **Settings → Connectors → Supabase** and connect it to the new account or organisation, so Claude can see the `mnpr` project.
-4. Tell Claude it's done. Claude then:
-   - loads the database (`supabase/migrations/`), already tested by `supabase/tests/`,
-   - deploys the plate checker (`supabase/functions/confirm-plate/`),
-   - fills in `src/config.json` with the project's public address and public key (safe to publish),
-   - sets the secret `PLATE_PEPPER` used to scramble plates.
+Project `MNPR - Manual Number Plate Recognition` (`pkzkkawhfdbvqdzhymzy`, Ireland eu-west-1), in its own account,
+separate from Tidework. Claude reaches it with a Supabase access token saved as a network secret for
+`api.supabase.com` on the MNPR cloud environment. The database (`supabase/migrations/`) and the plate
+checker are deployed, `PLATE_PEPPER` is set, and `src/config.json` holds the public address and key.
+`supabase/tests/live_test.mjs` checks the live project end to end.
 
 ## 2. Sign-in emails
 
