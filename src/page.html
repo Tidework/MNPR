@@ -1,0 +1,1228 @@
+<title>MNPR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<style>
+  /* Layout: a pixel sky and road up top with your car driving along, then the dark "tarmac" deck below where the game lives. One phone-width column, bottom tab bar. Single night-deck look by design. */
+  :root {
+    --abyss: #050A14;
+    --deck: #0A1426;
+    --panel: #101D33;
+    --panel-2: #152844;
+    --edge: #233A5E;
+    --cyan: #4DE3FF;
+    --pink: #FF5D8F;
+    --text: #E8F1FF;
+    --muted: #7D93B8;
+    --soft: #A8BAD2;
+    --plate: #FFD23F;
+    --plate-ink: #050A14;
+    --band: #2B4BC4;
+    --go: #5CF2A0;
+    --font: "VT323", "Courier New", ui-monospace, monospace;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--abyss); }
+  body {
+    background: linear-gradient(var(--deck), var(--abyss) 60%) fixed;
+    color: var(--text);
+    font: 22px/1.15 var(--font);
+    letter-spacing: 0.02em;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px));
+    -webkit-font-smoothing: none;
+  }
+  .app { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  section { display: flex; flex-direction: column; gap: 16px; }
+  button, input { font: inherit; color: inherit; letter-spacing: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px dashed var(--cyan); outline-offset: 3px; }
+  img.sprite { image-rendering: pixelated; display: block; }
+
+  /* ---- Scene ---- */
+  .scene { position: relative; margin-inline: calc(-1 * max(12px, env(safe-area-inset-left, 0px))); }
+  .scene canvas { display: block; width: 100%; aspect-ratio: 128 / 60; image-rendering: pixelated; }
+  .scanlines { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px); }
+  .hud { position: absolute; inset: 10px 14px auto 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .logo { position: relative; margin: 0; font: 400 52px/0.9 var(--font); letter-spacing: 0.08em; color: #fff; text-shadow: -3px 0 var(--pink), 3px 0 var(--cyan); }
+  .logo::after { content: attr(data-text); position: absolute; left: 0; top: 0; color: transparent; text-shadow: -3px 0 var(--pink); clip-path: inset(40% 0 35% 0); animation: glitch 4s steps(1) infinite; }
+  @keyframes glitch { 0%, 92%, 100% { transform: none; } 93% { transform: translateX(4px); } 95% { transform: translateX(-3px); } 97% { transform: translateX(2px); } }
+  .mode { font-size: 16px; letter-spacing: 0.18em; color: var(--abyss); background: rgb(232 241 255 / 0.75); padding: 2px 8px; border: 2px solid var(--abyss); }
+
+  /* ---- Frames, buttons, text ---- */
+  .frame { background: var(--panel); border: 3px solid var(--cyan); box-shadow: inset 0 0 0 3px var(--abyss), 0 0 14px rgb(77 227 255 / 0.25); padding: 14px; }
+  .quiet-frame { background: rgb(13 24 48 / 0.7); border: 2px solid var(--edge); padding: 12px; }
+  h2 { font: 400 20px/1 var(--font); letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); margin: 6px 0 -6px; }
+  .label { font-size: 17px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  .big {
+    position: relative; width: 100%; padding: 18px 12px; border: 3px solid var(--cyan); background: var(--panel);
+    box-shadow: inset 0 0 0 3px var(--abyss), 0 0 18px rgb(77 227 255 / 0.35);
+    font-size: clamp(26px, 8vw, 34px); letter-spacing: 0.14em; text-transform: uppercase; color: #fff; white-space: nowrap;
+    animation: glow 1.6s steps(2) infinite;
+  }
+  .big:active { transform: translateY(3px); }
+  @keyframes glow { 50% { box-shadow: inset 0 0 0 3px var(--abyss), 0 0 26px rgb(77 227 255 / 0.6); } }
+  .ghost { width: 100%; padding: 12px; border: 2px solid var(--edge); background: rgb(13 24 48 / 0.6); font-size: 22px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--soft); }
+  .ghost:hover, .chipbtn:hover { border-color: var(--muted); color: var(--text); }
+  .chipbtn { padding: 6px 12px; border: 2px solid var(--edge); background: rgb(13 24 48 / 0.6); font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--soft); }
+  .chipbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row .spacer { flex: 1; }
+  .text { width: 100%; min-width: 0; padding: 10px 12px; border: 2px solid var(--edge); background: var(--abyss); color: var(--text); font-size: 24px; }
+  .text::placeholder { color: var(--muted); opacity: 0.6; }
+  .text:focus { border-color: var(--cyan); outline: none; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .note { font-size: 17px; color: var(--muted); margin: 0; line-height: 1.2; }
+
+  /* ---- Level bar ---- */
+  .level { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; }
+  .lv { grid-row: span 2; font-size: 20px; letter-spacing: 0.1em; color: var(--abyss); background: var(--cyan); padding: 6px 8px; text-align: center; line-height: 0.9; }
+  .lv b { display: block; font-size: 36px; font-weight: 400; }
+  .bar { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; height: 16px; }
+  .bar i { background: var(--edge); }
+  .bar i.on { background: var(--pink); box-shadow: 0 0 6px rgb(255 93 143 / 0.6); }
+  .xp-line { display: flex; justify-content: space-between; gap: 8px; font-size: 17px; color: var(--soft); flex-wrap: wrap; }
+
+  /* ---- The plate ---- */
+  .plate {
+    display: grid; grid-template-columns: auto 1fr; background: var(--plate); color: var(--plate-ink);
+    border: 3px solid var(--abyss); box-shadow: inset 0 0 0 3px var(--plate), inset 0 0 0 6px var(--abyss), 0 0 0 3px rgb(255 210 63 / 0.25);
+    min-height: 150px;
+  }
+  .band { background: var(--band); color: #fff; width: 42px; margin: 6px 0 6px 6px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; font-size: 22px; }
+  .plate-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 12px 14px; }
+  .plate-label { font-size: 18px; letter-spacing: 0.3em; }
+  .plate-num { font-size: clamp(96px, 32vw, 132px); line-height: 0.8; font-variant-numeric: tabular-nums; }
+  .pop { animation: pop 0.45s steps(4); }
+  @keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+  .verdict { font-size: 22px; letter-spacing: 0.1em; white-space: nowrap; }
+  .verdict.yes { color: var(--go); }
+  .verdict.no { color: var(--pink); }
+  .check-row { display: flex; gap: 10px; align-items: center; }
+  .plate-text { text-transform: uppercase; letter-spacing: 0.2em; font-size: 28px; }
+
+  /* ---- Lists ---- */
+  .log { list-style: none; margin: 0; padding: 0; border: 2px solid var(--edge); background: rgb(13 24 48 / 0.7); }
+  .log li { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px; border-top: 2px solid var(--edge); }
+  .log li:first-child { border-top: 0; }
+  .log li.empty { display: block; color: var(--muted); padding: 16px 12px; }
+  .chip { justify-self: start; background: var(--plate); color: var(--plate-ink); border: 2px solid var(--abyss); box-shadow: 0 0 0 2px var(--plate); padding: 0 6px; font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .chip.front { background: #F2F4F8; box-shadow: 0 0 0 2px #F2F4F8; }
+  .what { display: flex; flex-direction: column; min-width: 0; }
+  .what b { font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .what span { font-size: 17px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .remove { border: 0; background: none; color: var(--muted); font-size: 26px; padding: 0 6px; }
+  .key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 17px; color: var(--muted); margin: -4px 0 0; }
+  .key .chip { font-size: 16px; padding: 0 4px; margin-right: 6px; }
+  .who-row { display: grid !important; grid-template-columns: 30px 56px minmax(0, 1fr) auto !important; }
+  .rank { color: var(--muted); }
+
+  /* ---- Maps ---- */
+  .map-frame { position: relative; border: 3px solid var(--cyan); box-shadow: inset 0 0 0 3px var(--abyss), 0 0 14px rgb(77 227 255 / 0.2); background: #0B1528; overflow: hidden; }
+  .map { position: relative; width: min(100%, calc(64vh * 755 / 1120)); aspect-ratio: 755 / 1120; max-width: 100%; margin: 0 auto; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .map.picking { cursor: crosshair; }
+  .map canvas, .map .overlay { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .map canvas { image-rendering: pixelated; }
+  .overlay { pointer-events: none; }
+  .overlay > * { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; }
+  .city { font-size: 16px; color: var(--soft); text-shadow: 1px 1px 0 var(--abyss), -1px -1px 0 var(--abyss), 1px -1px 0 var(--abyss), -1px 1px 0 var(--abyss); display: flex; align-items: center; gap: 4px; transform: translate(-3px, -50%); }
+  .city::before { content: ""; width: 5px; height: 5px; background: var(--text); box-shadow: 0 0 0 1px var(--abyss); }
+  .city.l { flex-direction: row-reverse; transform: translate(calc(-100% + 3px), -50%); }
+  .shield { font-size: 14px; padding: 0 3px; line-height: 1.1; border: 1px solid var(--abyss); }
+  .shield.m { background: var(--pink); color: var(--abyss); }
+  .shield.a { background: var(--soft); color: var(--abyss); }
+  .friend { display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -88%); animation: bob 0.8s steps(2) infinite; }
+  .friend .chip { font-size: 17px; margin-bottom: 2px; }
+  .friend span { font-size: 15px; color: var(--text); text-shadow: 1px 1px 0 var(--abyss), -1px -1px 0 var(--abyss); }
+  @keyframes bob { 50% { translate: 0 -2px; } }
+  .hit { width: 10px; height: 10px; background: var(--plate); border: 2px solid var(--abyss); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { background: #fff; } }
+  .pin { transform: translate(-50%, -100%); }
+  .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 2; }
+  .zoom button { width: 36px; height: 36px; border: 2px solid var(--edge); background: rgb(5 10 20 / 0.85); font-size: 26px; line-height: 1; padding: 0; color: var(--text); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { border: 2px solid var(--edge); background: rgb(13 24 48 / 0.7); padding: 8px 10px; }
+  .stat b { display: block; font-weight: 400; font-size: 36px; line-height: 0.9; color: #fff; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 15px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .seg { display: inline-flex; border: 2px solid var(--edge); }
+  .seg button { border: 0; background: none; padding: 8px 12px; font-size: 19px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--cyan); color: var(--abyss); }
+  .map-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .map-controls .field { flex: 1; min-width: 120px; }
+  .map-controls .text { padding: 6px 10px; }
+
+  /* ---- Garage ---- */
+  .showroom { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .showroom img { width: min(240px, 70vw); animation: bob 0.9s steps(2) infinite; }
+  .showroom .name { font-size: 34px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .road-strip { width: 100%; height: 10px; background: repeating-linear-gradient(90deg, var(--soft) 0 14px, transparent 14px 26px) center / 100% 2px no-repeat, var(--edge); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch { width: 40px; height: 40px; border: 3px solid var(--abyss); box-shadow: 0 0 0 2px var(--edge); padding: 0; }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--cyan); }
+  .cars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .car-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px 8px; border: 2px solid var(--edge); background: rgb(13 24 48 / 0.7); text-align: center; color: var(--text); }
+  .car-card img { width: 96px; }
+  .car-card .nm { font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .car-card .req { font-size: 16px; color: var(--muted); letter-spacing: 0.1em; }
+  .car-card[aria-pressed="true"] { border-color: var(--cyan); box-shadow: 0 0 12px rgb(77 227 255 / 0.35); }
+  .car-card.locked img { filter: brightness(0) invert(0.18); }
+  .car-card.locked .nm { color: var(--muted); }
+  .car-card:not(.locked):hover img { animation: bob 0.5s steps(2) infinite; }
+
+  /* ---- Tab bar ---- */
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: rgb(5 10 20 / 0.94); border-top: 2px solid var(--edge); padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); }
+  .tabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 4px; border: 2px solid #0A1222; background: #1A2B47; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--soft); }
+  .tabs img { width: 30px; height: 20px; object-fit: contain; }
+  .tabs button[aria-selected="true"] { background: var(--cyan); color: var(--abyss); border-color: var(--cyan); }
+
+  /* ---- Dialogs ---- */
+  dialog { border: 3px solid var(--cyan); padding: 0; background: var(--panel); color: var(--text); width: min(460px, 100vw - 20px); max-height: calc(100vh - 20px); box-shadow: inset 0 0 0 3px var(--abyss), 0 0 30px rgb(77 227 255 / 0.3); }
+  dialog::backdrop { background: rgb(5 10 20 / 0.8); }
+  .sheet { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+  .sheet h3 { margin: 0; font-weight: 400; font-size: 34px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .sheet .map { width: min(100%, calc(44vh * 755 / 1120)); }
+  .coords { font-size: 18px; color: var(--muted); }
+  .save { border: 3px solid var(--cyan); background: var(--cyan); color: var(--abyss); padding: 10px; font-size: 26px; letter-spacing: 0.24em; text-transform: uppercase; }
+  .save:disabled { background: transparent; color: var(--muted); border-color: var(--edge); cursor: not-allowed; }
+  .num-text { width: 7em; font-size: 30px; }
+
+  .unlock { text-align: center; align-items: center; overflow: hidden; position: relative; padding-block: 24px; }
+  .rays { position: absolute; left: 50%; top: 42%; width: 520px; height: 520px; margin: -260px 0 0 -260px; background: repeating-conic-gradient(rgb(77 227 255 / 0.14) 0 10deg, transparent 10deg 20deg); animation: spin 6s steps(24) infinite; pointer-events: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .unlock > *:not(.rays) { position: relative; }
+  .unlock .kicker { color: var(--pink); letter-spacing: 0.3em; font-size: 22px; }
+  .unlock img { width: 220px; animation: bob 0.7s steps(2) infinite; }
+
+  /* ---- Effects ---- */
+  .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; background: var(--abyss); border: 2px solid var(--cyan); padding: 8px 14px; font-size: 22px; letter-spacing: 0.06em; max-width: calc(100vw - 32px); }
+  .fx { position: fixed; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+  .bit { position: absolute; width: 8px; height: 8px; animation: burst 0.9s steps(9) forwards; }
+  @keyframes burst { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+  .float { position: absolute; transform: translate(-50%, 0); font-size: 34px; color: var(--plate); text-shadow: 2px 2px 0 var(--abyss); animation: rise 1.1s steps(11) forwards; white-space: nowrap; }
+  @keyframes rise { to { transform: translate(-50%, -70px); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; }
+  }
+</style>
+<!-- page -->
+<div class="app">
+  <header class="scene">
+    <canvas id="scene" width="128" height="60" aria-label="Your car on the road"></canvas>
+    <div class="scanlines"></div>
+    <div class="hud">
+      <h1 class="logo" data-text="MNPR">MNPR</h1>
+      <span class="mode" id="mode">THIS DEVICE</span>
+    </div>
+  </header>
+
+  <section id="play" role="tabpanel" aria-labelledby="tab-play">
+    <div class="level quiet-frame">
+      <div class="lv">LV<b id="lv">1</b></div>
+      <div class="bar" id="bar"></div>
+      <div class="xp-line"><span id="xp-text">0 / 50 XP</span><span id="next-car"></span></div>
+    </div>
+
+    <div class="plate" aria-live="polite">
+      <div class="band">UK</div>
+      <div class="plate-body">
+        <span class="plate-label">NEXT</span>
+        <span class="plate-num" id="next">1</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label" for="plate-input">Check a plate</label>
+      <div class="check-row">
+        <input class="text plate-text" id="plate-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB01 CDE">
+        <span class="verdict" id="verdict"></span>
+      </div>
+    </div>
+
+    <button class="big" id="spot">▶ Spotted 1 ◀</button>
+    <button class="ghost" id="spot-other">Log another number</button>
+
+    <div class="row">
+      <button class="chipbtn" id="undo">Undo last</button>
+      <span class="spacer"></span>
+      <button class="chipbtn" id="reset">Start again</button>
+    </div>
+    <div class="row note" id="reset-confirm" hidden>
+      <span>Back to 1? Your sightings and XP stay.</span>
+      <button class="chipbtn" id="reset-yes">Yes</button>
+      <button class="chipbtn" id="reset-no">No</button>
+    </div>
+
+    <h2>Your log</h2>
+    <p class="key"><span><span class="chip">7</span>Your run</span><span><span class="chip front">7</span>Logged for others</span></p>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <section id="mapview" role="tabpanel" aria-labelledby="tab-map" hidden>
+    <div class="stats">
+      <div class="stat"><b id="s-total">0</b><span>Sightings</span></div>
+      <div class="stat"><b id="s-players">0</b><span>Players</span></div>
+      <div class="stat"><b id="s-best">0</b><span>Highest</span></div>
+    </div>
+    <div class="map-controls">
+      <div class="field">
+        <label class="label" for="find">Find a number</label>
+        <input class="text" id="find" inputmode="numeric" maxlength="4" placeholder="All">
+      </div>
+      <div class="seg" role="group" aria-label="Show">
+        <button id="show-all" aria-pressed="true">Everyone</button>
+        <button id="show-mine" aria-pressed="false">Mine</button>
+      </div>
+    </div>
+    <div class="map-frame">
+      <div class="map" id="heat-map"></div>
+    </div>
+    <p class="note" id="map-note"></p>
+    <div id="found-wrap" hidden>
+      <h2 id="found-title">Where 23 has been seen</h2>
+      <ul class="log" id="found" style="margin-top: 14px"></ul>
+    </div>
+    <h2>Friends</h2>
+    <ul class="log" id="friends"></ul>
+  </section>
+
+  <section id="garage" role="tabpanel" aria-labelledby="tab-garage" hidden>
+    <div class="frame showroom">
+      <img class="sprite" id="show-car" alt="">
+      <div class="road-strip"></div>
+      <div class="name" id="show-name">Runabout</div>
+      <div class="note" id="show-note"></div>
+    </div>
+    <h2>Paint</h2>
+    <div class="swatches" id="swatches"></div>
+    <h2>Cars</h2>
+    <p class="note" style="margin-top: 4px">Earn XP for every plate you log. Pins and place names earn extra.</p>
+    <div class="cars" id="cars"></div>
+  </section>
+
+  <section id="top" role="tabpanel" aria-labelledby="tab-top" hidden>
+    <h2>Highest number reached</h2>
+    <ul class="log" id="board" style="margin-top: 14px"></ul>
+  </section>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tab-play" aria-selected="true" aria-controls="play"><img class="sprite" alt="">Play</button>
+  <button role="tab" id="tab-map" aria-selected="false" aria-controls="mapview"><img class="sprite" alt="">Map</button>
+  <button role="tab" id="tab-garage" aria-selected="false" aria-controls="garage"><img class="sprite" alt="">Garage</button>
+  <button role="tab" id="tab-top" aria-selected="false" aria-controls="top"><img class="sprite" alt="">Top</button>
+</nav>
+
+<dialog id="where">
+  <form class="sheet" method="dialog" id="where-form">
+    <h3 id="where-title">Where?</h3>
+    <div class="field" id="num-field">
+      <label class="label" for="other-num">Number</label>
+      <input class="text num-text" id="other-num" inputmode="numeric" maxlength="4" placeholder="23">
+    </div>
+    <div class="map-frame">
+      <div class="map picking" id="pick-map"></div>
+    </div>
+    <div class="coords" id="coords">Tap the map. Zoom in for a precise spot.</div>
+    <div class="field">
+      <label class="label" for="place">Place (optional)</label>
+      <input class="text" id="place" maxlength="60" placeholder="A30 near Bodmin" autocomplete="off">
+    </div>
+    <div class="row">
+      <button type="button" class="chipbtn" id="locate" hidden>Use my location</button>
+      <span class="spacer"></span>
+      <button type="button" class="chipbtn" id="cancel">Cancel</button>
+      <button type="button" class="chipbtn" id="no-loc">No location</button>
+    </div>
+    <button type="submit" class="save" id="save" disabled>Save</button>
+  </form>
+</dialog>
+
+<dialog id="unlock">
+  <form class="sheet unlock" method="dialog">
+    <div class="rays"></div>
+    <div class="kicker">NEW CAR UNLOCKED</div>
+    <img class="sprite" id="unlock-img" alt="">
+    <h3 id="unlock-name">Camper</h3>
+    <div class="row" style="justify-content: center">
+      <button class="chipbtn" value="later">Later</button>
+      <button class="save" id="unlock-use" value="use" style="padding-inline: 22px">Drive it</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="fx" id="fx"></div>
+
+<script>
+// Simplified Natural Earth outlines (public domain), projected for this map.
+const PATHS = __PATHS__;
+
+// Map projection: equirectangular, squashed for latitude 54.5°N. 100 units per degree of latitude.
+const K = Math.cos(54.5 * Math.PI / 180), LON0 = -11, LAT1 = 61, S = 100, W = 755, H = 1120;
+const toXY = (lat, lng) => [(lng - LON0) * K * S, (LAT1 - lat) * S];
+const toLatLng = (x, y) => [LAT1 - y / S, x / (K * S) + LON0];
+const exact = v => Math.round(v * 10000) / 10000;  // about 10 m
+const rough = v => Math.round(v * 100) / 100;      // about 1 km
+
+// ---- Pixel sprites ----
+// Each letter is one pixel. Fronts face right. b/l/d take the car's paint.
+const INK = {
+  k: "#050A14", W: "#E6FBFF", w: "#7FD6FF", e: "#FFFFFF", p: "#050A14", t: "#2A2F45", h: "#A8BAD2",
+  y: "#FFE066", r: "#FF4D6D", c: "#FFF1D0", n: "#FF8FC7", s: "#FFD23F", x: "#FF3B5C", z: "#3D7FFF", g: "#8A97B8"
+};
+const PAINTS = {
+  red: ["#E8504A", "#FF8A7A", "#9E2F3A"], blue: ["#3D7FFF", "#8AB4FF", "#2448A8"], green: ["#3FBF6A", "#8EF0A8", "#237A45"],
+  yellow: ["#FFC93C", "#FFE38A", "#B8861A"], pink: ["#FF5D8F", "#FFA3C2", "#B03562"], purple: ["#8B6CE8", "#BBA8FF", "#5A43A8"],
+  orange: ["#FF8C3A", "#FFBC85", "#B85A18"], cyan: ["#4DE3FF", "#B2F4FF", "#1E8FB0"], white: ["#E8F1FF", "#FFFFFF", "#A8BAD2"],
+  black: ["#2A2F45", "#4A5274", "#151A2B"], gold: ["#F5C542", "#FFF0A0", "#B8860B"]
+};
+const WHEELS = ["..kkkk..", ".kttttk.", "kttttttk", "ktthhttk", "ktthhttk", "kttttttk", ".kttttk.", "..kkkk.."];
+const RUNABOUT = [
+  "..........kkkkkkk.......",
+  ".........kWwwkwwwk......",
+  "........kWwwwkweewk.....",
+  ".......kWwwwwkwepwwk....",
+  "...kkkkkkkkkkkkkkkkkkk..",
+  "..kllllllllllllllllllllk",
+  ".kbbbbbbbbbbkbbbbbbbbbyk",
+  "kbbbbbbbbbbbkbbbbbbbbbbk",
+  "krbbbkkkkbbbbbbbkkkkbbbk",
+  "kdddkttttkdddddkttttkddk",
+  ".kkkkthhtkkkkkkkthhtkkk.",
+  "....kttttk.....kttttk...",
+  ".....kkkk.......kkkk...."
+];
+const CARS = [
+  { id: "runabout", name: "Runabout", rows: RUNABOUT },
+  { id: "camper", name: "Camper", rows: [
+    "..kkkkkkkkkkkkkkkkkkk...",
+    ".kccccccccccccccccccck..",
+    ".kcWwkWwwkWwwkWwwkweeck.",
+    ".kcwwkwwwkwwwkwwwkwepck.",
+    ".kccccccccccccccccccccck",
+    ".kbbbbbbbbbbbbbbbbbbbbyk",
+    ".kbbbbbbbbbbbbbbbbbbbbbk",
+    ".krbbkkkkbbbbbbbbkkkkbbk",
+    ".kddkttttkddddddkttttkdk",
+    "..kkkthhtkkkkkkkkthhtkk.",
+    "....kttttk......kttttk..",
+    ".....kkkk........kkkk..."
+  ] },
+  { id: "cab", name: "Black Cab", paint: "black", rows: [
+    "..........kkkk..........",
+    "..........ksssk.........",
+    "......kkkkkkkkkkkk......",
+    ".....kWwwwkwwwwwwk......",
+    "....kWwwwwkwwweewk......",
+    "....kwwwwwkwwwepwwk.....",
+    "..kkkkkkkkkkkkkkkkkkkk..",
+    ...RUNABOUT.slice(5)
+  ] },
+  { id: "icecream", name: "Ice Cream Van", rows: [
+    "......knnk..............",
+    ".....knnnnk.............",
+    "......kcck..............",
+    "..kkkkkkkkkkkkkkk.......",
+    "..kccccccccccccck.......",
+    "..kcnnnnnnnnnnnck.......",
+    "..kcwwwwwwwwwwwckkkkk...",
+    "..kcwwwwwwwwwwwckWweek..",
+    "..kcnnnnnnnnnnnckwwepwk.",
+    "..kbbbbbbbbbbbbbbbbbbbyk",
+    "..kbbbbbbbbbbbbbbbbbbbbk",
+    "..krbkkkkbbbbbbbbkkkkbbk",
+    "..kdkttttkddddddkttttkdk",
+    "...kkthhtkkkkkkkkthhtkk.",
+    "....kttttk......kttttk..",
+    ".....kkkk........kkkk..."
+  ] },
+  { id: "tractor", name: "Tractor", rows: [
+    "........kkkkkk..........",
+    "........kWwwwk..........",
+    "........kweewk..........",
+    "........kwepwk..........",
+    "........kwwwwk...kk.....",
+    "......kkkkkkkkkkkggkk...",
+    "......kbbbbbbbbbbbbbbk..",
+    "......kbbbbbbbbbbbbbbbk.",
+    "..kkkkkbbbbbbbbbbbbbbbyk",
+    ".ktttttkbbbbbbbbbbbbbbbk",
+    "kttttttkdddddddkkkkkdddk",
+    "ktthhttkkkkkkkkttttkkk..",
+    "ktthhttk......kthhtk....",
+    "kttttttk......kttttk....",
+    ".ktttttk.......kkkk.....",
+    "..kkkkk................."
+  ] },
+  { id: "panda", name: "Panda Car", paint: "white", rows: [
+    "...........kk...........",
+    "..........kxzk..........",
+    ...RUNABOUT.slice(0, 6),
+    ".kzszszszszkszszszszsyk",
+    ...RUNABOUT.slice(7)
+  ] },
+  { id: "bus", name: "Routemaster", paint: "red", rows: [
+    "..kkkkkkkkkkkkkkkkkkkkkkkkkk..",
+    ".kbbbbbbbbbbbbbbbbbbbbbbbbbbk.",
+    ".kbWwwkWwwkWwwkWwwkWwwkweewbk.",
+    ".kbwwwkwwwkwwwkwwwkwwwkwepwbk.",
+    ".kbbbbbbbbbbbbbbbbbbbbbbbbbbk.",
+    ".kssssssssssssssssssssssssssk.",
+    ".kbbbbbbbbbbbbbbbbbbbbbbbbbbk.",
+    ".kbWwwkWwwkWwwkWwwkbbbbbkWwbk.",
+    ".kbwwwkwwwkwwwkwwwkbbbbbkwwbk.",
+    ".kbbbbbbbbbbbbbbbbbbbbbbbbbbyk",
+    ".krbbkkkkbbbbbbbbbbbbbkkkkbbbk",
+    ".kddkttttkdddddddddddkttttkddk",
+    "..kkkthhtkkkkkkkkkkkkkthhtkk..",
+    "....kttttk...........kttttk...",
+    ".....kkkk.............kkkk...."
+  ] },
+  { id: "roadster", name: "Roadster", rows: [
+    "..........kkkkkkk.........",
+    ".......kkkWwwwkweekk......",
+    "....kkkkWwwwwwkwepwwkkk...",
+    "..kkllllllllllllllllllllkk",
+    ".kbbbbbbbbbbbbbbbbbbbbbbyk",
+    "krbbbkkkkbbbbbbbbbbkkkkbbk",
+    "kdddkttttkddddddddkttttkdk",
+    ".kkkkthhtkkkkkkkkkkthhtkk.",
+    "....kttttk........kttttk..",
+    ".....kkkk..........kkkk..."
+  ] },
+  { id: "monster", name: "Monster Truck", rows: [
+    ...RUNABOUT.slice(0, 8),
+    "krbbbbbbbbbbbbbbbbbbbbbk",
+    ".kkkkkkkkkkkkkkkkkkkkkk.",
+    "....kgk..........kgk....",
+    ...WHEELS.map(w => "." + w + "....." + w + "..")
+  ] },
+  { id: "golden", name: "Golden Roadster", paint: "gold", rows: null }
+];
+CARS[9].rows = CARS[7].rows;
+CARS.forEach((c, i) => { c.level = i + 1; });
+
+const PIN = [".kkkkk.", "krrrrrk", "krrerrk", "krrrrrk", ".krrrk.", "..krk..", "...k..."];
+const CLOUD = ["......eeee......", "...eeeeeeeeee...", ".eeeeeeeeeeeeee.", "eeeeeeeeeeeeeeee", ".hhhhhhhhhhhhhh."];
+const ICONS = {
+  play: ["kkkkkkkkkkk", "kzsssssssk.", "kzsksksskk.", "kzssssssssk", "kkkkkkkkkkk"].map(r => r.padEnd(11, "k")),
+  map: PIN,
+  top: [".kkkkkkk.", "kkssssskk", "kkssssskk", ".kssssk..", "..kssk...", "...ks....", "..kkkk...", "..kggk...", "..kkkk..."]
+};
+
+const spriteCache = new Map();
+function spriteCanvas(rows, paint) {
+  const pal = { ...INK, b: paint[0], l: paint[1], d: paint[2] };
+  const w = Math.max(...rows.map(r => r.length)), c = document.createElement("canvas");
+  c.width = w; c.height = rows.length;
+  const g = c.getContext("2d");
+  rows.forEach((r, y) => [...r].forEach((ch, x) => { if (pal[ch]) { g.fillStyle = pal[ch]; g.fillRect(x, y, 1, 1); } }));
+  return c;
+}
+function spriteURL(rows, paint, scale = 4) {
+  const key = rows.join("|") + paint.join() + scale;
+  if (!spriteCache.has(key)) {
+    const src = spriteCanvas(rows, paint), c = document.createElement("canvas");
+    c.width = src.width * scale; c.height = src.height * scale;
+    const g = c.getContext("2d"); g.imageSmoothingEnabled = false;
+    g.drawImage(src, 0, 0, c.width, c.height);
+    spriteCache.set(key, c.toDataURL());
+  }
+  return spriteCache.get(key);
+}
+
+// ---- Game state ----
+
+const KEY = "mnpr.v1";
+const $ = id => document.getElementById(id);
+
+let me = { n: 1, sightings: [], spots: [], car: "runabout", paint: "red" };
+let players = {};
+let mode = "local";
+let db = null, user = null, uid = null, synced = false;
+let writing = Promise.resolve();
+let showMine = false, pin = null, sheetMode = "run";
+
+// The rule: the plate's digits must be exactly the number, leading zeros allowed.
+function plateCounts(plate, n) {
+  const digits = plate.replace(/\D/g, "");
+  return digits !== "" && digits.replace(/^0+/, "") === String(n);
+}
+
+// XP: 10 per run plate, 5 per plate logged for others, +3 for a pin, +2 for a place name, +20 on every tenth number.
+function xpOf(p) {
+  const extra = s => (s.lat != null ? 3 : 0) + (s.place ? 2 : 0);
+  return p.sightings.reduce((t, s) => t + 10 + extra(s) + (s.n % 10 === 0 ? 20 : 0), 0) +
+    (p.spots || []).reduce((t, s) => t + 5 + extra(s), 0);
+}
+const xpFor = L => 25 * L * (L - 1);
+function levelOf(xp) { let L = 1; while (xp >= xpFor(L + 1)) L++; return L; }
+
+const best = p => p.sightings.reduce((m, s) => Math.max(m, s.n), 0);
+const allSeen = p => [...p.sightings, ...(p.spots || [])];
+const lastSeen = p => allSeen(p).filter(s => s.lat != null).sort((a, b) => b.at - a.at)[0];
+
+function rideOf(p) {
+  const lvl = levelOf(xpOf(p));
+  let car = CARS.find(c => c.id === p.car);
+  if (!car || car.level > lvl) car = CARS[0];
+  const paint = PAINTS[car.paint || p.paint] || PAINTS.red;
+  return { car, paint };
+}
+const rideURL = (p, scale) => { const { car, paint } = rideOf(p); return spriteURL(car.rows, paint, scale); };
+
+function loadLocal() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Number.isInteger(s.n) && Array.isArray(s.sightings)) {
+      me = { n: s.n, sightings: s.sightings, spots: Array.isArray(s.spots) ? s.spots : [], car: s.car || "runabout", paint: s.paint || "red" };
+    }
+  } catch (e) {}
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(me)); } catch (e) {}
+  if (mode === "shared") {
+    const body = { ...me, best: best(me), updated: Date.now() };
+    writing = writing
+      .then(() => db.doc("players/" + uid).set(body))
+      .catch(e => toast(e && e.code === "quota_exceeded" ? "The shared map is full." : "Couldn't save to the shared map."));
+  }
+  render();
+}
+
+async function connect() {
+  if (!window.claude || !window.claude.use) return;
+  const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!d || !u) return;
+  const id = await u.id();
+  if (!id) return;
+  db = d; user = u; uid = id; mode = "shared";
+  db.collection("players").onSnapshot(snap => {
+    players = {};
+    snap.docs.forEach(doc => {
+      const p = doc.exists && doc.data();
+      if (p && Array.isArray(p.sightings)) players[doc.id] = { ...p, spots: Array.isArray(p.spots) ? p.spots : [] };
+    });
+    if (!synced) {
+      synced = true;
+      const mine = players[uid];
+      if (mine) me = { n: mine.n, sightings: mine.sightings.slice(), spots: mine.spots.slice(), car: mine.car || me.car, paint: mine.paint || me.paint };
+      else if (me.sightings.length || me.spots.length) save(); // bring this device's run onto the shared map
+    }
+    render();
+  }, () => toast("Lost the shared map. Reload to reconnect."));
+}
+
+function allPlayers() { return mode === "shared" ? { ...players, [uid]: me } : { you: me }; }
+const isMe = id => id === uid || id === "you";
+async function namesFor(ids) {
+  const ps = user ? await user.profiles(ids) : {};
+  const out = {};
+  ids.forEach(id => { out[id] = isMe(id) ? "You" : ((ps[id] && ps[id].name) || "Someone"); });
+  return out;
+}
+
+// ---- The scene: sky, hills, road and your car, drawn at 128 × 60 pixels ----
+
+const scene = (() => {
+  const c = $("scene"), g = c.getContext("2d");
+  const SW = 128, SH = 60;
+  const clouds = [{ x: 10, y: 6, v: 0.06 }, { x: 70, y: 16, v: 0.1 }, { x: 108, y: 3, v: 0.04 }];
+  const cloud = spriteCanvas(CLOUD, PAINTS.white);
+  let carImg = null, t = 0, carX = 50, drive = null, puffs = [];
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function circle(cx, cy, r, col) {
+    g.fillStyle = col;
+    for (let y = -r; y <= r; y++) { const w = Math.round(Math.sqrt(r * r - y * y)); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); }
+  }
+  function draw() {
+    [[0, "#4FA8E8"], [10, "#66B6EE"], [19, "#7EC4F2"], [26, "#98D2F6"], [32, "#B6E0F9"], [36, "#D4EEFC"]].forEach(([y, col], i, a) => {
+      g.fillStyle = col; g.fillRect(0, y, SW, (a[i + 1] ? a[i + 1][0] : 42) - y);
+    });
+    circle(102, 14, 8, "#FFF3B0"); circle(102, 14, 6, "#FFD866");
+    clouds.forEach(k => g.drawImage(cloud, Math.round(k.x), k.y));
+    for (let x = 0; x < SW; x++) {
+      const u = x + t * 0.15;
+      const hFar = Math.round(35 + 2 * Math.sin(u / 11) + Math.sin(u / 5));
+      g.fillStyle = "#5C86B8"; g.fillRect(x, hFar, 1, 42 - hFar);
+      const v = x + t * 0.4;
+      const hNear = Math.round(39 + 1.5 * Math.sin(v / 7));
+      g.fillStyle = "#2E5A73"; g.fillRect(x, hNear, 1, 42 - hNear);
+    }
+    g.fillStyle = "#A8BAD2"; g.fillRect(0, 42, SW, 1);
+    g.fillStyle = "#1B2A44"; g.fillRect(0, 43, SW, 10);
+    g.fillStyle = "#E8F1FF";
+    const off = Math.floor(t * 1.5) % 10;
+    for (let x = -off; x < SW; x += 10) g.fillRect(x, 48, 5, 1);
+    g.fillStyle = "#4DE3FF"; g.fillRect(0, 53, SW, 1);
+    g.fillStyle = "#0D1830"; g.fillRect(0, 54, SW, 3);
+    g.fillStyle = "#0A1426"; g.fillRect(0, 57, SW, 3);
+    puffs.forEach(p => { g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); });
+    if (carImg) {
+      const bob = (Math.floor(t / 3) % 2) && !drive ? 1 : 0;
+      g.drawImage(carImg, Math.round(carX), 51 - carImg.height - bob);
+    }
+  }
+  function step() {
+    t++;
+    clouds.forEach(k => { k.x -= k.v; if (k.x < -18) k.x = SW + 2; });
+    if (drive) {
+      drive.f++;
+      if (drive.f < 18) carX += drive.f * 0.5;
+      else if (drive.f === 18) carX = -40;
+      else { carX += Math.max(0.5, (50 - carX) * 0.15); if (carX >= 49.5) { carX = 50; drive = null; } }
+    }
+    if (t % 4 === 0 && carImg) puffs.push({ x: carX - 2, y: 48 - (t % 8 ? 0 : 1), c: t % 8 ? "#A8BAD2" : "#7D93B8", life: 10 });
+    puffs = puffs.filter(p => (p.x -= 0.8, p.y -= 0.15, --p.life > 0));
+    draw();
+  }
+  let last = 0;
+  function loop(now) {
+    if (now - last > 70) { last = now; step(); }
+    requestAnimationFrame(loop);
+  }
+  return {
+    start() { draw(); if (!still) requestAnimationFrame(loop); },
+    setCar(rows, paint) { carImg = spriteCanvas(rows, paint); draw(); },
+    drive() { if (!still) drive = { f: 0 }; }
+  };
+})();
+
+// ---- Pixel atlas map: drawn small, scaled up crisp, zoom and pan ----
+
+const CITIES = [
+  ["London", 51.51, -0.13, 1], ["Birmingham", 52.48, -1.90, 1], ["Manchester", 53.48, -2.24, 1],
+  ["Leeds", 53.80, -1.55, 1], ["Newcastle", 54.97, -1.61, 1], ["Bristol", 51.45, -2.59, 2],
+  ["Cardiff", 51.48, -3.18, 1, "l"], ["Glasgow", 55.86, -4.25, 1, "l"], ["Edinburgh", 55.95, -3.19, 1],
+  ["Belfast", 54.60, -5.93, 1], ["Aberdeen", 57.15, -2.09, 1], ["Inverness", 57.48, -4.22, 1],
+  ["Plymouth", 50.38, -4.14, 1], ["Norwich", 52.63, 1.30, 1, "l"],
+  ["Liverpool", 53.41, -2.98, 2, "l"], ["Sheffield", 53.38, -1.47, 2], ["Nottingham", 52.95, -1.15, 2],
+  ["Southampton", 50.90, -1.40, 2], ["Exeter", 50.72, -3.53, 2], ["Truro", 50.26, -5.05, 2],
+  ["Hull", 53.74, -0.33, 2, "l"], ["Carlisle", 54.89, -2.93, 2], ["Dundee", 56.46, -2.97, 2],
+  ["Cambridge", 52.21, 0.12, 2], ["Swansea", 51.62, -3.94, 2], ["Oxford", 51.75, -1.26, 2],
+  ["Penzance", 50.12, -5.54, 2, "l"], ["Perth", 56.40, -3.44, 2], ["Leicester", 52.64, -1.13, 2]
+];
+const ring = (lat, lng, rl, rg, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = i / n * Math.PI * 2; return [lat + Math.sin(a) * rl, lng + Math.cos(a) * rg];
+});
+// Road lines are drawn through key towns, not surveyed.
+const ROADS = [
+  ["M1", "m", [[51.57,-0.24],[51.88,-0.42],[52.05,-0.72],[52.25,-1.0],[52.62,-1.2],[52.93,-1.27],[53.38,-1.38],[53.75,-1.45]]],
+  ["M6", "m", [[52.40,-1.25],[52.45,-1.45],[52.53,-1.88],[52.75,-2.05],[53.0,-2.25],[53.4,-2.55],[53.8,-2.7],[54.05,-2.78],[54.4,-2.62],[54.65,-2.75],[54.9,-2.95]]],
+  ["M74", "m", [[54.9,-2.95],[55.05,-3.15],[55.3,-3.45],[55.6,-3.8],[55.83,-4.1]]],
+  ["M8", "m", [[55.86,-4.25],[55.9,-3.8],[55.93,-3.3]]],
+  ["M5", "m", [[52.5,-2.0],[52.2,-2.15],[51.85,-2.2],[51.55,-2.6],[51.3,-2.95],[51.0,-3.08],[50.73,-3.47]]],
+  ["M4", "m", [[51.49,-0.3],[51.43,-0.98],[51.5,-1.4],[51.53,-1.75],[51.53,-2.55],[51.58,-3.0],[51.53,-3.2],[51.6,-3.65],[51.65,-3.9]]],
+  ["M62", "m", [[53.4,-2.9],[53.45,-2.6],[53.48,-2.3],[53.65,-1.95],[53.73,-1.6],[53.72,-1.0],[53.75,-0.4]]],
+  ["M40", "m", [[51.55,-0.45],[51.65,-0.8],[51.75,-1.17],[52.0,-1.3],[52.25,-1.55],[52.42,-1.78]]],
+  ["M3", "m", [[51.4,-0.45],[51.3,-0.85],[51.1,-1.3],[50.92,-1.4]]],
+  ["M11", "m", [[51.6,0.05],[51.9,0.2],[52.2,0.12]]],
+  ["M25", "m", ring(51.5, -0.12, 0.23, 0.37)],
+  ["M90", "m", [[56.0,-3.4],[56.2,-3.42],[56.4,-3.45]]],
+  ["M80", "m", [[55.88,-4.15],[56.0,-3.95],[56.12,-3.93]]],
+  ["M1", "m", [[54.6,-5.93],[54.45,-6.35],[54.4,-6.7]]],
+  ["A1", "a", [[51.65,-0.2],[52.0,-0.25],[52.57,-0.27],[53.0,-0.75],[53.4,-1.05],[53.75,-1.4],[54.1,-1.45],[54.5,-1.6],[54.97,-1.62],[55.4,-1.7],[55.77,-2.0],[55.95,-2.6],[55.95,-3.1]]],
+  ["A9", "a", [[56.12,-3.93],[56.4,-3.45],[56.7,-3.73],[57.2,-3.83],[57.48,-4.22]]],
+  ["A90", "a", [[56.4,-3.45],[56.46,-2.97],[56.75,-2.45],[57.15,-2.1]]],
+  ["A30", "a", [[50.73,-3.47],[50.7,-3.9],[50.64,-4.2],[50.47,-4.72],[50.3,-5.05],[50.23,-5.23],[50.12,-5.53]]],
+  ["A11", "a", [[52.2,0.2],[52.4,0.6],[52.63,1.29]]],
+  ["A55", "a", [[53.2,-2.9],[53.25,-3.5],[53.28,-3.85],[53.23,-4.15],[53.3,-4.6]]],
+  ["A38", "a", [[50.73,-3.47],[50.5,-3.75],[50.4,-4.14]]]
+];
+const MAPCOL = { sea: "#0B1528", r1: "#0F2142", r2: "#163160", coast: "#4DE3FF", land: "#1D3557", other: "#16294A", mway: "#FF5D8F", aroad: "#A8BAD2" };
+const SNAP = Object.values(MAPCOL).map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+const HEAT = ["#FFD23F", "#FF9F43", "#FF5D8F", "#FFF2F6"].map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+const LAND = Object.entries(PATHS).map(([code, d]) => [code, new Path2D(d)]);
+const ROAD_PATHS = ROADS.map(([, kind, pts]) => {
+  const p = new Path2D();
+  pts.forEach(([la, lo], i) => { const [x, y] = toXY(la, lo); i ? p.lineTo(x, y) : p.moveTo(x, y); });
+  return [kind, p];
+});
+const PX = 3; // screen pixels per map pixel
+
+function atlas(host, { onTap, heat } = {}) {
+  const canvas = document.createElement("canvas"); host.appendChild(canvas);
+  const overlay = document.createElement("div"); overlay.className = "overlay"; host.appendChild(overlay);
+  const zoomBox = document.createElement("div"); zoomBox.className = "zoom";
+  zoomBox.innerHTML = '<button type="button" aria-label="Zoom in">+</button><button type="button" aria-label="Zoom out">-</button><button type="button" aria-label="Show whole map">#</button>';
+  host.parentElement.appendChild(zoomBox);
+
+  const fixed = [];
+  CITIES.forEach(([name, la, lo, tier, side]) => {
+    const d = document.createElement("div"); d.className = side ? "city l" : "city"; d.textContent = name;
+    fixed.push({ el: d, xy: toXY(la, lo), minZoom: tier === 1 ? 1 : 2.2 });
+  });
+  const seen = new Set();
+  ROADS.forEach(([ref, kind, pts]) => {
+    if (ref === "M25" || seen.has(ref + pts[0])) return; seen.add(ref + pts[0]);
+    const d = document.createElement("div"); d.className = "shield " + kind; d.textContent = ref;
+    const mid = pts[Math.floor(pts.length / 2)];
+    fixed.push({ el: d, xy: toXY(mid[0], mid[1]), minZoom: kind === "m" ? 1.6 : 2 });
+  });
+  overlay.append(...fixed.map(f => f.el));
+  let marks = [];
+  let v = { x: 0, y: 0, w: W, h: H };
+  const zoom = () => W / v.w;
+
+  function draw() {
+    const r = host.getBoundingClientRect();
+    if (!r.width) return;
+    const cw = Math.max(1, Math.round(r.width / PX)), ch = Math.max(1, Math.round(r.height / PX));
+    canvas.width = cw; canvas.height = ch;
+    const g = canvas.getContext("2d"), s = cw / v.w;
+    g.fillStyle = MAPCOL.sea; g.fillRect(0, 0, cw, ch);
+    g.setTransform(s, 0, 0, s, -v.x * s, -v.y * s);
+    g.lineJoin = g.lineCap = "round";
+    [[9, MAPCOL.r1], [5, MAPCOL.r2]].forEach(([w, col]) => {
+      g.strokeStyle = col; g.lineWidth = w / s; LAND.forEach(([, p]) => g.stroke(p));
+    });
+    LAND.forEach(([code, p]) => { g.fillStyle = code === "GBR" ? MAPCOL.land : MAPCOL.other; g.fill(p); });
+    g.strokeStyle = MAPCOL.coast; g.lineWidth = 1 / s; LAND.forEach(([, p]) => g.stroke(p));
+    ROAD_PATHS.forEach(([kind, p]) => {
+      g.strokeStyle = kind === "m" ? MAPCOL.mway : MAPCOL.aroad; g.lineWidth = (kind === "m" ? 1.3 : 1) / s; g.stroke(p);
+    });
+    g.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Snap every pixel to the palette so edges stay hard, then lay the heat on top in four steps.
+    const img = g.getImageData(0, 0, cw, ch), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      let bi = 0, bd = 1e9;
+      for (let j = 0; j < SNAP.length; j++) {
+        const q = SNAP[j], dd = (d[i] - q[0]) ** 2 + (d[i + 1] - q[1]) ** 2 + (d[i + 2] - q[2]) ** 2;
+        if (dd < bd) { bd = dd; bi = j; }
+      }
+      d[i] = SNAP[bi][0]; d[i + 1] = SNAP[bi][1]; d[i + 2] = SNAP[bi][2]; d[i + 3] = 255;
+    }
+    if (heat) {
+      const pts = heat();
+      if (pts.length) {
+        const hc = document.createElement("canvas"); hc.width = cw; hc.height = ch;
+        const hg = hc.getContext("2d"), rad = Math.min(16, Math.max(4, 16 * s));
+        pts.forEach(([mx, my]) => {
+          const x = (mx - v.x) * s, y = (my - v.y) * s;
+          if (x < -rad || y < -rad || x > cw + rad || y > ch + rad) return;
+          const gr = hg.createRadialGradient(x, y, 0, x, y, rad);
+          gr.addColorStop(0, "rgba(0,0,0,0.5)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+          hg.fillStyle = gr; hg.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+        });
+        const a = hg.getImageData(0, 0, cw, ch).data;
+        for (let i = 0; i < d.length; i += 4) {
+          const al = a[i + 3];
+          if (al < 24) continue;
+          const q = HEAT[al < 70 ? 0 : al < 120 ? 1 : al < 180 ? 2 : 3];
+          d[i] = q[0]; d[i + 1] = q[1]; d[i + 2] = q[2];
+        }
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
+  function place(item) {
+    const px = (item.xy[0] - v.x) / v.w, py = (item.xy[1] - v.y) / v.h;
+    const show = px > -0.05 && px < 1.05 && py > -0.05 && py < 1.05 && zoom() >= (item.minZoom || 0);
+    item.el.hidden = !show;
+    if (show) { item.el.style.left = px * 100 + "%"; item.el.style.top = py * 100 + "%"; }
+  }
+  let queued = false;
+  function apply() {
+    v.w = Math.min(W, Math.max(W / 16, v.w)); v.h = v.w * H / W;
+    v.x = Math.min(W - v.w, Math.max(0, v.x)); v.y = Math.min(H - v.h, Math.max(0, v.y));
+    fixed.forEach(place); marks.forEach(place);
+    if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; draw(); }); }
+  }
+  function zoomAt(f, mx, my) {
+    const nw = Math.min(W, Math.max(W / 16, v.w / f)), k = nw / v.w;
+    v.x = mx - (mx - v.x) * k; v.y = my - (my - v.y) * k; v.w = nw; apply();
+  }
+  const toMap = (cx, cy) => {
+    const r = host.getBoundingClientRect();
+    return [v.x + (cx - r.left) / r.width * v.w, v.y + (cy - r.top) / r.height * v.h];
+  };
+
+  const [zin, zout, zall] = zoomBox.children;
+  zin.onclick = () => zoomAt(1.8, v.x + v.w / 2, v.y + v.h / 2);
+  zout.onclick = () => zoomAt(1 / 1.8, v.x + v.w / 2, v.y + v.h / 2);
+  zall.onclick = () => { v = { x: 0, y: 0, w: W, h: H }; apply(); };
+  host.addEventListener("wheel", e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, ...toMap(e.clientX, e.clientY)); }, { passive: false });
+
+  // One finger drags, two fingers pinch, a still tap drops a pin.
+  const pts = new Map(); let moved = false, start = null, pinch = null;
+  host.addEventListener("pointerdown", e => {
+    host.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1) { moved = false; start = { cx: e.clientX, cy: e.clientY, x: v.x, y: v.y }; }
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: v.w, mid: toMap((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) };
+      moved = true;
+    }
+  });
+  host.addEventListener("pointermove", e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const r = host.getBoundingClientRect();
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()];
+      const nw = Math.min(W, Math.max(W / 16, pinch.w * pinch.d / Math.hypot(a[0] - b[0], a[1] - b[1]))), k = nw / v.w;
+      v.x = pinch.mid[0] - (pinch.mid[0] - v.x) * k; v.y = pinch.mid[1] - (pinch.mid[1] - v.y) * k; v.w = nw; apply();
+    } else if (pts.size === 1 && start) {
+      const dx = e.clientX - start.cx, dy = e.clientY - start.cy;
+      if (Math.hypot(dx, dy) > 6) moved = true;
+      if (moved) { v.x = start.x - dx / r.width * v.w; v.y = start.y - dy / r.height * v.h; apply(); }
+    }
+  });
+  const up = e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pts.size === 1) { const [p] = [...pts.values()]; start = { cx: p[0], cy: p[1], x: v.x, y: v.y }; }
+    if (pts.size === 0) {
+      if (!moved && e.type === "pointerup" && onTap) onTap(...toMap(e.clientX, e.clientY));
+      start = null;
+    }
+  };
+  host.addEventListener("pointerup", up);
+  host.addEventListener("pointercancel", up);
+
+  apply();
+  return {
+    focus(xy, z) { v.w = W / z; v.x = xy[0] - v.w / 2; v.y = xy[1] - v.w * H / W / 2; apply(); },
+    setMarks(list) { marks.forEach(m => m.el.remove()); marks = list; overlay.append(...marks.map(m => m.el)); marks.forEach(place); },
+    refresh: apply
+  };
+}
+
+// ---- Rendering ----
+
+const fmtWhen = t => new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const fmtWhere = s => s.place || (s.lat == null ? "No location" : `${s.lat.toFixed(3)}, ${s.lng.toFixed(3)}`);
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 60) return m <= 1 ? "just now" : m + " min ago";
+  const h = Math.round(m / 60);
+  return h < 24 ? h + " h ago" : Math.round(h / 24) + " d ago";
+}
+function li(cls, html) { const e = document.createElement("li"); if (cls) e.className = cls; e.innerHTML = html; return e; }
+function emptyRow(list, text) { const e = li("empty", ""); e.textContent = text; list.appendChild(e); }
+function logRow(chip, front, main, sub, extra) {
+  const e = li("", '<span class="chip"></span><span class="what"><b></b><span></span></span>');
+  e.children[0].textContent = chip; if (front) e.children[0].classList.add("front");
+  e.querySelector("b").textContent = main; e.querySelector(".what span").textContent = sub;
+  e.appendChild(extra || document.createElement("span"));
+  return e;
+}
+function personRow(rank, p, name, sub, chip) {
+  const e = li("who-row", '<span class="rank"></span><img class="sprite" alt="" width="56"><span class="what"><b></b><span></span></span><span class="chip"></span>');
+  e.children[0].textContent = rank; e.children[1].src = rideURL(p, 2);
+  e.querySelector("b").textContent = name; e.querySelector(".what span").textContent = sub;
+  e.children[3].textContent = chip;
+  return e;
+}
+
+let lastN = null;
+function render() {
+  $("mode").textContent = mode === "shared" ? "SHARED MAP" : "THIS DEVICE";
+  if (lastN !== null && lastN !== me.n) { const el = $("next"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+  lastN = me.n;
+  $("next").textContent = me.n;
+  $("spot").textContent = "▶ Spotted " + me.n + " ◀";
+  updateVerdict();
+  $("undo").disabled = me.sightings.length === 0;
+
+  const xp = xpOf(me), lvl = levelOf(xp), lo = xpFor(lvl), hi = xpFor(lvl + 1);
+  $("lv").textContent = lvl;
+  const on = Math.floor((xp - lo) / (hi - lo) * 12);
+  $("bar").innerHTML = Array.from({ length: 12 }, (_, i) => `<i class="${i < on ? "on" : ""}"></i>`).join("");
+  $("xp-text").textContent = `${xp} / ${hi} XP`;
+  const next = CARS.find(c => c.level > lvl);
+  $("next-car").textContent = next ? `${next.name} at LV ${next.level}` : "Every car unlocked";
+
+  const { car, paint } = rideOf(me);
+  scene.setCar(car.rows, paint);
+
+  const log = $("log");
+  log.replaceChildren();
+  const mine = [...me.sightings.map(s => ({ ...s, run: true })), ...me.spots.map(s => ({ ...s, run: false }))]
+    .sort((a, b) => b.at - a.at).slice(0, 60);
+  if (!mine.length) emptyRow(log, "Nothing yet. Find a plate with just a 1 on it.");
+  mine.forEach(s => {
+    let extra;
+    if (!s.run) {
+      extra = document.createElement("button");
+      extra.className = "remove"; extra.textContent = "×"; extra.setAttribute("aria-label", "Remove " + s.n);
+      extra.onclick = () => { me = { ...me, spots: me.spots.filter(x => x.at !== s.at) }; save(); };
+    }
+    log.appendChild(logRow(s.n, !s.run, fmtWhere(s), fmtWhen(s.at), extra));
+  });
+
+  const ps = Object.values(allPlayers());
+  $("s-total").textContent = ps.reduce((t, p) => t + allSeen(p).length, 0);
+  $("s-players").textContent = ps.filter(p => allSeen(p).length).length;
+  $("s-best").textContent = ps.reduce((m, p) => Math.max(m, best(p)), 0);
+  $("map-note").textContent = (mode === "shared" ? "Friends show where they last logged a plate, to about 1 km. " : "Only your sightings, on this device. ") + "Plates are never saved.";
+  renderMapView();
+  renderGarage();
+  renderBoard();
+}
+
+async function renderMapView() {
+  const all = allPlayers();
+  const ids = Object.keys(all).filter(id => allSeen(all[id]).length);
+  const names = await namesFor(ids);
+
+  const marks = [];
+  const list = $("friends");
+  list.replaceChildren();
+  ids.sort((a, b) => (lastSeen(all[b]) || { at: 0 }).at - (lastSeen(all[a]) || { at: 0 }).at).forEach((id, i) => {
+    const p = all[id], last = lastSeen(p);
+    list.appendChild(personRow("", p, names[id], last ? `${fmtWhere(last)} · ${ago(last.at)}` : "No location yet", p.n));
+    if (!last) return;
+    const d = document.createElement("div"); d.className = "friend"; d.style.animationDelay = (i * 0.17) + "s";
+    d.innerHTML = '<b class="chip"></b><img class="sprite" alt="" width="48"><span></span>';
+    d.children[0].textContent = p.n; d.children[1].src = rideURL(p, 2); d.children[2].textContent = names[id];
+    marks.push({ el: d, xy: toXY(rough(last.lat), rough(last.lng)) });
+  });
+  if (!ids.length) emptyRow(list, "No one on the map yet.");
+
+  const n = parseInt($("find").value, 10);
+  const found = $("found");
+  found.replaceChildren();
+  $("found-wrap").hidden = !n;
+  const hits = [];
+  if (n) {
+    $("found-title").textContent = "Where " + n + " has been seen";
+    const seen = ids.filter(id => !showMine || isMe(id))
+      .flatMap(id => allSeen(all[id]).filter(s => s.n === n).map(s => ({ ...s, who: names[id] })))
+      .sort((a, b) => b.at - a.at);
+    seen.forEach(s => {
+      found.appendChild(logRow(n, true, fmtWhere(s), `${s.who} · ${ago(s.at)}`));
+      if (s.lat != null) { const d = document.createElement("div"); d.className = "hit"; hits.push({ el: d, xy: toXY(s.lat, s.lng) }); }
+    });
+    if (!seen.length) emptyRow(found, "No one has logged " + n + " yet.");
+  }
+  heatMap.setMarks([...hits, ...marks]);
+  heatMap.refresh();
+}
+
+function heatPoints() {
+  const all = allPlayers();
+  return Object.keys(all).filter(id => !showMine || isMe(id))
+    .flatMap(id => allSeen(all[id])).filter(s => s.lat != null).map(s => toXY(s.lat, s.lng));
+}
+
+function renderGarage() {
+  const lvl = levelOf(xpOf(me)), { car, paint } = rideOf(me);
+  $("show-car").src = spriteURL(car.rows, paint, 8);
+  $("show-name").textContent = car.name;
+  $("show-note").textContent = car.paint ? "Comes in its own colours." : "LV " + lvl + " driver";
+
+  const sw = $("swatches");
+  sw.replaceChildren();
+  Object.entries(PAINTS).filter(([k]) => k !== "gold").forEach(([k, p]) => {
+    const b = document.createElement("button");
+    b.className = "swatch"; b.style.background = p[0]; b.setAttribute("aria-label", k);
+    b.setAttribute("aria-pressed", String(me.paint === k));
+    b.onclick = () => { me = { ...me, paint: k }; save(); if (car.paint) toast(car.name + " keeps its own colours."); };
+    sw.appendChild(b);
+  });
+
+  const grid = $("cars");
+  grid.replaceChildren();
+  CARS.forEach(c => {
+    const locked = c.level > lvl;
+    const b = document.createElement("button");
+    b.className = "car-card" + (locked ? " locked" : "");
+    b.setAttribute("aria-pressed", String(c.id === car.id));
+    b.innerHTML = '<img class="sprite" alt=""><span class="nm"></span><span class="req"></span>';
+    b.children[0].src = spriteURL(c.rows, PAINTS[c.paint || me.paint] || PAINTS.red, 4);
+    b.children[1].textContent = locked ? "???" : c.name;
+    b.children[2].textContent = locked ? "LV " + c.level : (c.id === car.id ? "Driving" : "Unlocked");
+    b.onclick = () => {
+      if (locked) return toast("Reach LV " + c.level + " to unlock this one.");
+      me = { ...me, car: c.id }; save(); scene.drive();
+    };
+    grid.appendChild(b);
+  });
+}
+
+async function renderBoard() {
+  const all = allPlayers();
+  const rows = Object.entries(all).filter(([, p]) => p.sightings.length)
+    .map(([id, p]) => ({ id, p, best: best(p) })).sort((a, b) => b.best - a.best);
+  const names = await namesFor(rows.map(r => r.id));
+  const board = $("board");
+  board.replaceChildren();
+  if (!rows.length) return emptyRow(board, "No one has spotted a 1 yet.");
+  rows.forEach((r, i) => board.appendChild(personRow(i + 1, r.p, names[r.id], "LV " + levelOf(xpOf(r.p)), r.best)));
+}
+
+function updateVerdict() {
+  const v = $("verdict"), plate = $("plate-input").value.trim();
+  if (!plate) { v.textContent = ""; v.className = "verdict"; return; }
+  const ok = plateCounts(plate, me.n);
+  v.textContent = ok ? "COUNTS" : "NOPE";
+  v.className = "verdict " + (ok ? "yes" : "no");
+}
+
+// ---- Effects ----
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+function burst(el, text) {
+  const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, fx = $("fx");
+  const cols = ["#FFD23F", "#FF5D8F", "#4DE3FF", "#5CF2A0", "#FFFFFF"];
+  for (let i = 0; i < 22; i++) {
+    const b = document.createElement("i"); b.className = "bit";
+    const a = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
+    b.style.cssText = `left:${x}px;top:${y}px;background:${cols[i % cols.length]};--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 30}px`;
+    fx.appendChild(b); setTimeout(() => b.remove(), 950);
+  }
+  if (text) {
+    const f = document.createElement("div"); f.className = "float"; f.textContent = text;
+    f.style.left = x + "px"; f.style.top = (r.top - 10) + "px";
+    fx.appendChild(f); setTimeout(() => f.remove(), 1150);
+  }
+}
+
+// ---- Maps ----
+
+const heatMap = atlas($("heat-map"), { heat: heatPoints });
+const pinEl = document.createElement("img"); pinEl.className = "sprite pin"; pinEl.src = spriteURL(PIN, PAINTS.red, 4); pinEl.alt = "";
+const pickMap = atlas($("pick-map"), { onTap: (x, y) => setPin(...toLatLng(x, y)) });
+
+// ---- Logging ----
+
+function setPin(lat, lng) {
+  pin = { lat: exact(lat), lng: exact(lng) };
+  pickMap.setMarks([{ el: pinEl, xy: toXY(pin.lat, pin.lng) }]);
+  $("coords").textContent = `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`;
+  updateSave();
+}
+function otherNum() { const n = parseInt($("other-num").value, 10); return n > 0 ? n : null; }
+function updateSave() {
+  const numOk = sheetMode === "run" || otherNum();
+  $("save").disabled = !(pin && numOk);
+  $("no-loc").disabled = !numOk;
+}
+function openSheet(kind) {
+  sheetMode = kind;
+  $("num-field").hidden = kind === "run";
+  $("where-title").textContent = kind === "run" ? "Where was " + me.n + "?" : "Log a number";
+  $("other-num").value = ""; $("place").value = "";
+  updateSave();
+  $("where").showModal();
+  pickMap.refresh();
+  if (kind === "other") $("other-num").focus();
+}
+
+if (navigator.geolocation) $("locate").hidden = false;
+$("locate").addEventListener("click", () => {
+  navigator.geolocation.getCurrentPosition(
+    p => { setPin(p.coords.latitude, p.coords.longitude); pickMap.focus(toXY(pin.lat, pin.lng), 8); },
+    () => toast("Location is off. Tap the map instead."),
+    { timeout: 8000, maximumAge: 60000 }
+  );
+});
+$("spot").addEventListener("click", () => openSheet("run"));
+$("spot-other").addEventListener("click", () => openSheet("other"));
+$("other-num").addEventListener("input", updateSave);
+$("cancel").addEventListener("click", () => $("where").close());
+
+function logSighting(where) {
+  const place = $("place").value.trim();
+  const s = { at: Date.now(), ...where, ...(place ? { place } : {}) };
+  const xp0 = xpOf(me), lvl0 = levelOf(xp0);
+  let msg, from;
+  if (sheetMode === "run") {
+    me = { ...me, n: me.n + 1, sightings: [...me.sightings, { n: me.n, ...s }] };
+    $("plate-input").value = "";
+    msg = "Now find " + me.n + "."; from = $("spot");
+  } else {
+    const n = otherNum();
+    me = { ...me, spots: [...me.spots, { n, ...s }] };
+    msg = n + " is on the map."; from = $("spot-other");
+  }
+  $("where").close();
+  save();
+  scene.drive();
+  const gained = xpOf(me) - xp0, lvl = levelOf(xpOf(me));
+  burst(from, "+" + gained + " XP");
+  const unlocked = CARS.filter(c => c.level > lvl0 && c.level <= lvl).pop();
+  if (unlocked) setTimeout(() => showUnlock(unlocked), 700);
+  else toast(lvl > lvl0 ? "LEVEL " + lvl + ". " + msg : msg);
+}
+
+function showUnlock(car) {
+  $("unlock-img").src = spriteURL(car.rows, PAINTS[car.paint || me.paint] || PAINTS.red, 8);
+  $("unlock-name").textContent = car.name;
+  $("unlock").returnValue = "";
+  $("unlock").onclose = () => {
+    if ($("unlock").returnValue === "use") { me = { ...me, car: car.id }; save(); scene.drive(); }
+  };
+  $("unlock").showModal();
+}
+
+$("where-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!$("save").disabled) logSighting({ lat: pin.lat, lng: pin.lng });
+});
+$("no-loc").addEventListener("click", () => logSighting({}));
+
+$("undo").addEventListener("click", () => {
+  const last = me.sightings[me.sightings.length - 1];
+  if (!last) return;
+  me = { ...me, n: last.n, sightings: me.sightings.slice(0, -1) };
+  save();
+});
+$("reset").addEventListener("click", () => { $("reset-confirm").hidden = false; });
+$("reset-no").addEventListener("click", () => { $("reset-confirm").hidden = true; });
+$("reset-yes").addEventListener("click", () => { me = { ...me, n: 1 }; $("reset-confirm").hidden = true; save(); });
+$("plate-input").addEventListener("input", updateVerdict);
+$("find").addEventListener("input", renderMapView);
+
+// ---- Tabs ----
+
+const TABS = { play: "tab-play", mapview: "tab-map", garage: "tab-garage", top: "tab-top" };
+for (const [panel, tab] of Object.entries(TABS)) {
+  $(tab).addEventListener("click", () => {
+    for (const [p, t] of Object.entries(TABS)) {
+      $(p).hidden = p !== panel;
+      $(t).setAttribute("aria-selected", String(p === panel));
+    }
+    if (panel === "mapview") heatMap.refresh();
+    window.scrollTo(0, 0);
+  });
+}
+$("tab-play").querySelector("img").src = spriteURL(ICONS.play, PAINTS.red, 3);
+$("tab-map").querySelector("img").src = spriteURL(ICONS.map, PAINTS.red, 3);
+$("tab-garage").querySelector("img").src = spriteURL(RUNABOUT, PAINTS.cyan, 2);
+$("tab-top").querySelector("img").src = spriteURL(ICONS.top, PAINTS.red, 3);
+for (const [id, mine] of [["show-all", false], ["show-mine", true]]) {
+  $(id).addEventListener("click", () => {
+    showMine = mine;
+    $("show-all").setAttribute("aria-pressed", String(!mine));
+    $("show-mine").setAttribute("aria-pressed", String(mine));
+    renderMapView();
+  });
+}
+window.addEventListener("resize", () => heatMap.refresh());
+
+loadLocal();
+render();
+scene.start();
+connect();
+</script>

@@ -10,7 +10,11 @@ The number plate game, logged.
 
 ## The app
 
-`index.html` is the whole app: one file, no build step. Open it in a browser to play.
+`index.html` is the whole app in one file. Open it in a browser to play.
+
+To change it, edit `src/page.html` (the map outlines live in `src/uk.json`), then run `python3 build.py`. That rebuilds `index.html`, plus `preview.html` for publishing as a claude.ai artifact.
+
+The look is 16-bit pixel art: a sky-and-road scene with your car, ten unlockable cars, XP for every plate you log (more for pins and place names), and a pixel heat map.
 
 - **Play**: shows the number you need next. Type a plate to check it, tap **Spotted**, then drop a pin on the map to log where you were. **Log another number** adds any other number you've seen to the map for other players, without changing your run.
 - **Map**: a road-atlas style heat map of sightings. Zoom and drag to explore. **Find a number** shows exactly where that number has been seen. Friends appear as plates showing the number they're on, roughly where they last logged a plate.
