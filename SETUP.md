@@ -11,14 +11,13 @@ separate from Tidework. Claude reaches it with a Supabase access token saved as 
 checker are deployed, `PLATE_PEPPER` is set, and `src/config.json` holds the public address and key.
 `supabase/tests/live_test.mjs` checks the live project end to end.
 
-## 2. Sign-in emails
+## 2. Sign-in emails (live, 20 Nov 2026)
 
-- Site URL: `https://mnpr.lyleswandesign.co.uk/`; redirect URLs allow that and `https://tidework.github.io/MNPR/` (set 19 Nov 2026 through the Management API).
-- Supabase's built-in email sender allows only 2 sign-in emails an hour. Before friends join, add a Resend
-  sender: a Resend account, the domain `mnpr.lyleswandesign.co.uk` verified in Resend (its DNS records added in Cloudflare, DNS only), then in Supabase **Authentication → Emails → SMTP
-  Settings**: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (entered
-  there by Lyle, never in chat or this repo), sender `MNPR <play@mnpr.lyleswandesign.co.uk>`. Then raise the email
-  rate limit under **Authentication → Rate Limits**.
+- Site URL: `https://mnpr.lyleswandesign.co.uk/` (also allowed: `https://tidework.github.io/MNPR/`).
+- Sent through Resend (the Tidework Resend account, domain `mnpr.lyleswandesign.co.uk`, Ireland), from
+  `MNPR <play@mnpr.lyleswandesign.co.uk>`, up to 60 an hour. Supabase uses a sending-only Resend key
+  (`mnpr-supabase-smtp`) limited to that domain. DNS records for it are in Cloudflare (DNS only).
+- Sign-in emails say "Your MNPR sign-in link", styled like the game.
 
 ## 3. The DVLA plate check (live, 20 Nov 2026)
 
