@@ -20,7 +20,10 @@ checker are deployed, `PLATE_PEPPER` is set, and `src/config.json` holds the pub
   there by Lyle, never in chat or this repo), sender `MNPR <play@mnpr.lyleswandesign.co.uk>`. Then raise the email
   rate limit under **Authentication → Rate Limits**.
 
-## 3. The DVLA plate check
+## 3. The DVLA plate check (live, 20 Nov 2026)
+
+The `DVLA_API_KEY` secret is set and DVLA answers lookups. That key was shared in a chat, so ask DVLA for a new one at some point and replace the secret yourself (Edge Functions → Secrets).
+
 
 1. Apply for a Vehicle Enquiry Service API key: https://register-for-ves.driver-vehicle-licensing.api.gov.uk/
    (about: https://developer-portal.driver-vehicle-licensing.api.gov.uk/apis/vehicle-enquiry-service/vehicle-enquiry-service-description.html)
