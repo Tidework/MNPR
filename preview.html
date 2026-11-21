@@ -116,6 +116,7 @@
   @keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
   .verdict { font-size: 22px; letter-spacing: 0.1em; white-space: nowrap; }
+  .field .verdict { white-space: normal; }
   .verdict.yes { color: var(--go); }
   .verdict.no { color: var(--pink); }
   .check-row { display: flex; gap: 10px; align-items: center; }
@@ -1415,6 +1416,43 @@ function openSheet(kind) {
   pickMap.refresh();
   (kind === "other" ? $("other-num") : $("full-plate")).focus();
 }
+
+// ---- Finding a place ----
+// Typing in the place box moves the map there. postcodes.io looks up UK towns, villages and
+// postcodes (from OS Open Names). "A30 near Bodmin" tries the whole text, then "Bodmin".
+const POSTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}$/i, OUTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]?$/i;
+function placeQueries(text) {
+  const t = text.trim(), words = t.split(/\s+/), after = t.match(/\b(?:near|in|at|by|outside|nr)\.?\s+(.+)$/i);
+  return [...new Set([t, after && after[1], t.includes(",") && t.split(",").pop().trim(), words.length > 1 && words[words.length - 1]])]
+    .filter(q => q && q.length >= 2);
+}
+async function findPlace(text) {
+  for (const q of placeQueries(text)) {
+    const url = POSTCODE.test(q) ? `https://api.postcodes.io/postcodes/${encodeURIComponent(q.replace(/\s/g, ""))}`
+      : OUTCODE.test(q) ? `https://api.postcodes.io/outcodes/${encodeURIComponent(q)}`
+      : `https://api.postcodes.io/places?q=${encodeURIComponent(q)}&limit=1`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const d = await res.json(), hit = Array.isArray(d.result) ? d.result[0] : d.result;
+      if (hit && hit.latitude != null) return { lat: hit.latitude, lng: hit.longitude, name: hit.name_1 || hit.postcode || hit.outcode };
+    } catch (e) { return null; }
+  }
+  return null;
+}
+let placeTimer, placeAsk = 0;
+$("place").addEventListener("input", () => {
+  clearTimeout(placeTimer);
+  const text = $("place").value, ask = ++placeAsk;
+  if (text.trim().length < 2) return;
+  placeTimer = setTimeout(async () => {
+    const hit = await findPlace(text);
+    if (!hit || ask !== placeAsk) return;
+    pickMap.focus(toXY(hit.lat, hit.lng), 8);
+    if (!pin) setPin(hit.lat, hit.lng);
+    $("coords").textContent = `${hit.name}: tap the map to move the pin.`;
+  }, 450);
+});
 
 if (navigator.geolocation) $("locate").hidden = false;
 $("locate").addEventListener("click", () => {
