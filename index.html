@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MNPR</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png" id="touch-icon">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MNPR">
+<meta name="theme-color" content="#050A14">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,6 +270,10 @@
       </div>
     </div>
 
+    <div class="row quiet-frame" id="badge-cta" hidden>
+      <span class="note" style="flex: 1">Show the number you need on the app icon.</span>
+      <button class="chipbtn" id="badge-btn" type="button">Turn on</button>
+    </div>
     <div class="row quiet-frame" id="signin-cta" hidden>
       <span class="note" style="flex: 1">Sign in to keep your run on every device and join the map.</span>
       <button class="chipbtn" id="signin-cta-btn" type="button">Sign in</button>
@@ -603,6 +613,36 @@ function icon(rows, paint, scale, cls = "") {
   const i = new Image(); i.className = ("sprite " + cls).trim(); i.alt = ""; i.src = spriteURL(rows, paint, scale);
   return i;
 }
+// 5 × 7 pixel letters for the app icon.
+const GLYPHS = {
+  0: "01110100011001110101110011000101110", 1: "00100011000010000100001000010001110",
+  2: "01110100010000100010001000100011111", 3: "11110000010000101110000010000111110",
+  4: "00010001100101010010111110001000010", 5: "11111100001111000001000011000101110",
+  6: "00110010001000011110100011000101110", 7: "11111000010001000100010000100001000",
+  8: "01110100011000101110100011000101110", 9: "01110100011000101111000010001001100",
+  M: "10001110111010110101100011000110001", N: "10001110011010110011100011000110001",
+  P: "11110100011000111110100001000010000", R: "11110100011000111110101001001010001"
+};
+// The app icon: the yellow plate showing some text (your next number, or MNPR), on the night deck.
+function plateIcon(text, size = 180) {
+  const c = document.createElement("canvas"); c.width = c.height = size;
+  const g = c.getContext("2d"), u = size / 60; // drawn on a 60 × 60 grid
+  const box = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x * u), Math.round(y * u), Math.ceil(w * u), Math.ceil(h * u)); };
+  box(0, 0, 60, 60, "#0A1426");
+  box(0, 46, 60, 1, "#4DE3FF");
+  box(4, 16, 52, 26, "#050A14");
+  box(5, 17, 50, 24, "#FFD23F");
+  box(6, 18, 48, 22, "#050A14");
+  box(7, 19, 46, 20, "#FFD23F");
+  box(7, 19, 6, 20, "#2B4BC4");
+  const chars = String(text).split(""), cols = chars.length * 6 - 1;
+  const cell = Math.min(38 / cols, 16 / 7), w = cols * cell, x0 = 13 + (40 - w) / 2, y0 = 29 - 3.5 * cell;
+  chars.forEach((ch, i) => [...(GLYPHS[ch] || "")].forEach((bit, k) => {
+    if (bit === "1") box(x0 + (i * 6 + k % 5) * cell, y0 + Math.floor(k / 5) * cell, cell, cell, "#050A14");
+  }));
+  return c;
+}
+
 function spriteURL(rows, paint, scale = 4) {
   const key = rows.join("|") + paint.join() + scale;
   if (!spriteCache.has(key)) {
@@ -1161,6 +1201,7 @@ function render() {
   if (lastN !== null && lastN !== me.n) { const el = $("next"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
   lastN = me.n;
   $("next").textContent = me.n;
+  updateAppIcon();
   $("spot-label").textContent = "Spotted " + me.n;
   $("undo").disabled = me.sightings.length === 0;
 
@@ -1448,6 +1489,23 @@ $("friend-form").addEventListener("submit", e => {
     refresh();
   }, () => {});
 });
+
+// ---- App icon ----
+// Adding MNPR to the home screen saves the icon as it is then: the plate with your number.
+// After that, iPhones only allow a badge on the icon, so the badge carries your number.
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+function updateAppIcon() {
+  try { $("touch-icon").href = plateIcon(me.n).toDataURL("image/png"); } catch (e) {}
+  const canBadge = standalone && "setAppBadge" in navigator && "Notification" in window;
+  $("badge-cta").hidden = !canBadge || Notification.permission !== "default";
+  if (canBadge && Notification.permission === "granted") navigator.setAppBadge(me.n).catch(() => {});
+}
+$("badge-btn").addEventListener("click", async () => {
+  try { await Notification.requestPermission(); } catch (e) {}
+  updateAppIcon();
+  if (Notification.permission === "granted") toast("Your number is on the app icon.");
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) updateAppIcon(); });
 
 // ---- Account ----
 
