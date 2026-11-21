@@ -116,7 +116,7 @@
   @keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
   .verdict { font-size: 22px; letter-spacing: 0.1em; white-space: nowrap; }
-  .field .verdict { white-space: normal; }
+  .field .verdict { white-space: pre-line; }
   .verdict.yes { color: var(--go); }
   .verdict.no { color: var(--pink); }
   .check-row { display: flex; gap: 10px; align-items: center; }
@@ -1363,18 +1363,18 @@ const sheetNumber = () => sheetMode === "run" ? me.n : otherNum();
 // A full plate showing the right number makes the sighting confirmed: full XP.
 function plateState() {
   const text = $("full-plate").value.trim(), n = sheetNumber();
-  if (!text) return { plate: null, note: "Unconfirmed: just the number." };
+  if (!text) return { plate: null, note: "Just the number." };
   if (!n) return { plate: null, note: "Enter the number first." };
   const c = checkPlate(text, n);
-  return c.ok ? { plate: normalisePlate(text), note: sb && online() ? "Checks it's a real plate, then confirms it." : "Confirmed." }
-    : { plate: null, note: c.reason + " Saves as unconfirmed.", bad: true };
+  return c.ok ? { plate: normalisePlate(text), note: sb && online() ? "Checked with DVLA on save." : "Plate matches." }
+    : { plate: null, note: c.reason, bad: true };
 }
 function updateSave() {
   const n = sheetNumber(), st = plateState();
   const s = { n: n || 1, lat: pin ? 1 : null, place: $("place").value.trim() };
   const xp = sightingXp({ ...s, confirmed: !!st.plate }, sheetMode === "run");
   const v = $("plate-verdict");
-  v.textContent = st.note + (n ? ` +${xp} XP` : "");
+  v.textContent = st.note + (n ? `\n${st.plate ? "Confirmed" : "Unconfirmed"} +${xp} XP` : "");
   v.className = "verdict " + (st.plate ? "yes" : st.bad ? "no" : "");
   $("save").disabled = busy || !(pin && n);
   $("no-loc").disabled = busy || !n;
