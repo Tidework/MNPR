@@ -6,6 +6,7 @@ MNPR (Manual Number Plate Recognition) is a phone-first web game for the number 
 - You count up in order. A plate counts only when you see it; you can't save one for later.
 - The plate's digits must be exactly your number. Leading zeros are fine (007 counts for 7, 17 doesn't).
 - Your number stays with you and only moves when you log the right plate.
+- Already playing: a player can set the number they're on once (at sign-up or in the account screen). Skipped numbers earn no XP; the leaderboard counts them as reached and shows "started at N".
 - Confirmed sighting: the full plate, checked (UK format, right number, DVLA when the key is set): full XP. Unconfirmed: just the number: less XP.
 
 ## Code

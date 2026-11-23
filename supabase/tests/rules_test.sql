@@ -106,6 +106,22 @@ select public.log_sighting('run');
 select public.start_again();
 select pg_temp.check((select n from public.profiles where id = auth.uid()) = 1, 'start again sets 1');
 
+-- Starting from a number you're already on: once only, and no XP for the numbers skipped.
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select pg_temp.check(public.set_start(95) = 95, 'B starts at 95');
+select pg_temp.check((select n from public.profiles where id = auth.uid()) = 95, 'B is now on 95');
+select pg_temp.check(public.xp_of(auth.uid()) = 4, 'skipped numbers earn no XP (still 4)');
+do $$ begin
+  perform public.set_start(500);
+  raise exception 'FAILED: set a start twice';
+exception when raise_exception then
+  if sqlerrm like 'FAILED%' then raise; end if;
+  raise notice 'ok: a start can only be set once';
+end $$;
+select pg_temp.check((select best from public.leaderboard() where username = 'bob') = 94, 'leaderboard counts the numbers started past');
+select pg_temp.check((select started_at from public.leaderboard() where username = 'bob') = 95, 'leaderboard shows where B started');
+
 -- Signed-out visitors: map, leaderboard and totals only.
 reset role;
 set role anon;

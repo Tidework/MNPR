@@ -408,10 +408,19 @@
       <label class="label" for="username">Pick a username</label>
       <input class="text" id="username" maxlength="20" required pattern="[A-Za-z0-9_]{3,20}" autocomplete="username" placeholder="plate_spotter">
       <p class="note">3 to 20 letters, numbers or _. Friends find you by it.</p>
+      <label class="label" for="first-n">Already playing? Number you're on</label>
+      <input class="text num-text" id="first-n" inputmode="numeric" maxlength="4" placeholder="1">
       <button class="save" type="submit">Start playing</button>
     </form>
     <div class="field" id="signed-in" hidden>
       <p id="who" style="margin: 0"></p>
+      <form class="field" id="start-form" hidden>
+        <label class="label" for="start-n">Already playing? Number you're on (once only)</label>
+        <div class="row">
+          <input class="text num-text" id="start-n" inputmode="numeric" maxlength="4" placeholder="95" required>
+          <button class="chipbtn" type="submit">Set</button>
+        </div>
+      </form>
       <p class="note">We keep your email, username, car and sightings. Plates are never saved: confirmed ones keep only a scrambled check code. Other players see the map rounded to about 1 km, with no names. Friends you accept see your number and roughly where you last logged.</p>
       <div class="row">
         <button class="chipbtn" id="sign-out" type="button">Sign out</button>
@@ -680,7 +689,8 @@ function sightingXp(s, run) {
 const xpOf = p => p.sightings.reduce((t, s) => t + sightingXp(s, true), 0) + p.spots.reduce((t, s) => t + sightingXp(s, false), 0);
 const xpFor = L => 25 * L * (L - 1);
 function levelOf(xp) { let L = 1; while (xp >= xpFor(L + 1)) L++; return L; }
-const best = p => p.sightings.reduce((m, s) => Math.max(m, s.n), 0);
+// Highest number reached, counting the numbers a player started past.
+const best = p => p.sightings.reduce((m, s) => Math.max(m, s.n), (p.started || 1) - 1);
 
 // The car someone drives, held back to one their level has unlocked.
 function rideOf({ car: id, paint: pid }, xp) {
@@ -728,8 +738,9 @@ async function loadMine() {
   ]);
   if (!profile) { account.username = null; return; }
   account.username = profile.username;
+  account.startSet = profile.start_set;
   me = {
-    n: profile.n, car: profile.car, paint: profile.paint,
+    n: profile.n, car: profile.car, paint: profile.paint, started: profile.started_at,
     sightings: rows.filter(r => r.kind === "run").map(fromRow),
     spots: rows.filter(r => r.kind === "spot").map(fromRow)
   };
@@ -1314,7 +1325,8 @@ function renderBoard() {
   board.replaceChildren();
   if (!world.board.length) return emptyRow(board, "No one has spotted a 1 yet.");
   world.board.forEach((r, i) => {
-    const row = personRow(i + 1, r, r.xp, r.mine ? r.username + " (you)" : r.username, "LV " + levelOf(r.xp), r.best);
+    const sub = "LV " + levelOf(r.xp) + (r.started_at > 1 ? " · started at " + r.started_at : "");
+    const row = personRow(i + 1, r, r.xp, r.mine ? r.username + " (you)" : r.username, sub, r.best);
     board.appendChild(row);
   });
 }
@@ -1520,6 +1532,7 @@ function openAccount() {
   $("link-sent").hidden = true;
   $("username-form").hidden = !signedIn || named;
   $("signed-in").hidden = !named;
+  $("start-form").hidden = !named || account.startSet;
   $("delete-confirm").hidden = true;
   if (named) $("who").textContent = "Signed in as " + account.email;
   if (!$("account").open) $("account").showModal();
@@ -1542,8 +1555,19 @@ $("username-form").addEventListener("submit", async e => {
   const { error } = await sb.from("profiles").insert({ id: account.id, username, car: me.car, paint: me.paint });
   if (error) return toast(error.code === "23505" ? "That username is taken." : error.message);
   account.username = username;
+  const first = parseInt($("first-n").value, 10);
+  if (first > 1) { try { await call(sb.rpc("set_start", { p_n: first })); } catch (e) {} }
   $("account").close();
   toast("Welcome, " + username + ".");
+  await refresh();
+});
+$("start-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const n = parseInt($("start-n").value, 10);
+  if (!(n > 0)) return toast("Enter the number you're on.");
+  try { await call(sb.rpc("set_start", { p_n: n })); } catch (e) { return; }
+  $("account").close();
+  toast("You're on " + n + ".");
   await refresh();
 });
 $("sign-out").addEventListener("click", async () => { await sb.auth.signOut(); $("account").close(); });
