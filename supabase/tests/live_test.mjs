@@ -27,11 +27,20 @@ try {
   const confirm = body => fetch(`${URL}/functions/v1/confirm-plate`, { method: "POST", headers: H, body: JSON.stringify(body) });
   r = await confirm({ kind: "run", plate: "AB17 CDE" });
   ok(r.status === 400 && /shows 17, not 2/.test((await j(r)).error), "wrong plate refused: " + "shows 17, not 2");
+  // AB02 CDE fits the format but was never issued ("02" isn't an age code), so with the DVLA key set
+  // DVLA refuses it; without the key it's confirmed on format alone.
   r = await confirm({ kind: "run", plate: "ab02 cde", lat: 51.5, lng: -0.12 });
   const body = await j(r);
-  ok(r.status === 200 && body.checkedBy === "format" && (await me()).n === 3, "confirmed run via plate checker (format check), number now 3");
-  r = await confirm({ kind: "spot", n: 2, plate: "AB02CDE" });
-  ok(r.status === 400 && /already logged/.test((await j(r)).error), "same plate can't earn XP twice");
+  const dvla = r.status === 400 && /DVLA has no vehicle/.test(body.error || "");
+  if (dvla) {
+    ok((await me()).n === 2, "DVLA refuses a plate that was never issued; number stays 2");
+    r = await rpc("log_sighting", { p_kind: "run", p_lat: 51.5, p_lng: -0.12 });
+    ok(r.status === 200 && (await me()).n === 3, "unconfirmed run logged, number now 3");
+  } else {
+    ok(r.status === 200 && body.checkedBy === "format" && (await me()).n === 3, "confirmed run via plate checker (format check), number now 3");
+    r = await confirm({ kind: "spot", n: 2, plate: "AB02CDE" });
+    ok(r.status === 400 && /already logged/.test((await j(r)).error), "same plate can't earn XP twice");
+  }
   r = await fetch(`${URL}/functions/v1/confirm-plate`, { method: "POST", headers: { apikey: ANON, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "run", plate: "AB03CDE" }) });
   ok(r.status === 401, "plate checker refuses signed-out callers");
 
